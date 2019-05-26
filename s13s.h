@@ -537,69 +537,6 @@ namespace S13S {
 		//全小：全是2至8的牌型
 		static HandTy CheckAllSmall(uint8_t const* src, int len);
 	public:
-		
-		//从src中抽取连续n张牌到dst中
-		//src uint8_t* 牌源
-		//ty FetchTy 抽取类型
-		//n int 抽取n张，dst长度
-		//dst uint8_t* 符合要求的单个目标牌型
-		//cpy uint8_t* 抽取后不符合要求的余牌
-		//static bool FetchCardsFrom(
-		//	uint8_t *src, int len, FetchTy Ty,
-		//	uint8_t *dst, int n, uint8_t *cpy, int& cpylen);
-		//枚举组合牌型
-		//ty FetchTy 抽取类型
-		//cardsList uint8_t(*)[5] 枚举出符合要求的牌型
-		//static int  EnumCards(uint8_t *cards, int& len, int n,
-		//	FetchTy ty, uint8_t(*cardsList)[5], int size);
-		//枚举组合牌型
-		//ty FetchTy 抽取类型
-		//cardsList std::vector<boost::shared_ptr<uint8_t>>& 枚举出符合要求的牌型
-		//static int  EnumCards(uint8_t *cards, int& len, int n,
-		//	FetchTy ty, std::vector<boost::shared_ptr<uint8_t>>& cardsList);
-		//枚举组合牌型
-		//static int  EnumCards(uint8_t *cards, int& len, int n, FetchTy ty);
-		//枚举组合牌型(四炸/三张/对子/散牌)
-		//static void EnumCombineCards(uint8_t *cards, int len);
-		
-	public:
-		//同花顺：花色相同的连续五张牌
-		//static int EnumShunJin(uint8_t *cards, int& len, uint8_t(*cardsList)[5], int size);
-		//铁支：除了四张值相同的牌外没有其它牌型
-		//static int EnumTieZhi(uint8_t *cards, int& len, uint8_t(*cardsList)[5], int size);
-		//葫芦：一组三条加上一组对子
-		//static int EnumHuLu(uint8_t *cards, int& len, uint8_t(*cardsList)[5], int size);
-		//同花：花色相同的五张牌，非顺子
-		//static int EnumTongHua(uint8_t *cards, int& len, uint8_t(*cardsList)[5], int size);
-		//顺子：花色不同的连续五张牌(10JQKA最大，A2345最小)
-		//static int EnumShunZi(uint8_t *cards, int& len, uint8_t(*cardsList)[5], int size);
-		//三条：除了三张值相同的牌外没有其它牌型
-		//static int EnumThreeTiao(uint8_t *cards, int& len, uint8_t(*cardsList)[5], int size);
-		//两对：两个对子加上一张单牌
-		//static int EnumTwoDui(uint8_t *cards, int& len, uint8_t(*cardsList)[5], int size);
-		//对子(一对)：除了两张值相同的牌外没有其它牌型
-		//static int EnumDuiZi(uint8_t *cards, int& len, uint8_t(*cardsList)[5], int size);
-	public:
-		
-		
-		//三分天下(三套炸弹)：三副炸弹(四张值相同)加上一张单张的牌型
-		//static bool IsThreeBomb(uint8_t *cards, int n);
-		
-		//凑一色：全是红牌(方块/红心)或黑牌(黑桃/梅花)的牌型
-		//static bool IsCouOneSe(uint8_t *cards);
-		//双怪冲三：二对葫芦加上一个对子加上一张单张的牌型
-		//static bool IsTwoGuaiThree(uint8_t *cards);
-		//四套三条(四套冲三)：四个三条加上一张单张的牌型
-		//static bool IsFourTaoThree(uint8_t *cards);
-		//五对三条(五对冲三)：五个对子加上一个三条
-		//static bool IsFiveDuiThree(uint8_t *cards);
-		//六对半：六个对子加上一张单张的牌型
-		//bool IsSixDuiHalf();
-		//三顺子：三墩均是顺子的牌型
-		//static bool IsThreeShunZi(uint8_t *cards);
-		//三同花：三墩均是同一花色的牌型
-		//static bool IsThreeTongHua(uint8_t *cards);
-	public:
 		//玩家手牌类型
 		//static HandTy GetHandCardsType(uint8_t *cards);
 	private:
