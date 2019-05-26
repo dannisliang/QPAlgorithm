@@ -2142,12 +2142,17 @@ namespace S13S {
 			}
 		}
 		{
-			//手牌按牌点从小到大排序(23...QKA)
-			//SortCards(src, len, false, true, true);
-			if (GetCardValue(src[0]) > J)
-			{
-				//十二皇族：十三张全是J，Q，K，A的牌型
-				return specialTy = Ty12Royal;
+			//十二皇族：十三张全是J，Q，K，A的牌型
+			int i = 0;
+			while (i < len) {
+				uint8_t v = GetCardValue(src[i]);
+				if (v != A) {
+					if (v >= J) {
+						//牌值从小到大
+						specialTy = TyAllBig;
+					}
+					break;
+				}
 			}
 		}
 		return specialTy;
