@@ -2231,15 +2231,20 @@ namespace S13S {
 		uint8_t const* psrc = NULL, *psrc2 = NULL;
 		int lensrc = 0, lensrc2 = 0;
 		
-		int cursorFirst = 0, cursorSecond = 0, cursorLast = 0;
-		HandTy tyFirst = TyNil, tySecond = TyNil, tyLast = TyNil;
-		std::vector<uint8_t> const *first = NULL, *second = NULL, *last = NULL;
-		classify_t info = { 0 };
+		//叶子节点(头墩)/子节点(中墩)/根节点(尾墩)
+		int cursorLeaf = 0, cursorChild = 0, cursorRoot = 0;
+		HandTy tyLeaf = TyNil, tyChild = TyNil, tyRoot = TyNil;
+		EnumList::EnumCards const *leaf = NULL, *child = NULL, *root = NULL;
+		
 		hand.Reset();
 		
+		//根节点：当前枚举项列表
+		EnumList *rootDunList = new EnumList();
+
 		int c = 0;
+		classify_t info = { 0 };
 		//枚举尾墩/5张 //////
-		EnumCards(src, len, 5, info, hand.dun[DunLast], DunLast);
+		EnumCards(src, len, 5, info, *rootDunList, DunLast);
 
 		//至尊青龙/一条龙(十三水)/十二皇族
 		hand.specialTy = CheckDragonRoyal(src, len);
@@ -2248,28 +2253,33 @@ namespace S13S {
 			//返回一个枚举牌型及对应的余牌
 			//按同花顺/铁支/葫芦/同花/顺子/三条/两对/对子/散牌的顺序
 			memset(cpy, 0, MaxSZ * sizeof(uint8_t));
-			if (!hand.dun[DunLast].GetNextEnumCards(src, len, last, tyLast, cursorLast, cpy, cpylen)) {
+			if (!rootDunList->GetNextEnumItem(src, len, root, tyRoot, cursorRoot, cpy, cpylen)) {
 				break;
 			}
 			
-			//printf("取尾墩 = [%s] ", StringCardType(tyLast).c_str());
-			//PrintCardList(&last->front(), last->size());
-			hand.dun[DunLast].PrintCursorEnumCards();
+			//printf("取尾墩 = [%s] ", StringCardType(tyRoot).c_str());
+			//PrintCardList(&root->front(), root->size());
+			rootDunList->PrintCursorEnumCards();
 
 			//除去尾墩后的余牌
 			psrc = cpy;
 			lensrc = cpylen;
 			
+			//子节点：根节点当前枚举项牌型对应余牌枚举子项列表
+			EnumList*& childDunList = rootDunList->GetCursorChildItem(cursorRoot);
+			assert(childDunList == NULL);
+			childDunList = new EnumList();
+			
 			classify_t info = { 0 };
 			//从余牌中枚举中墩/5张 //////
-			EnumCards(psrc, lensrc, 5, info, hand.dun[DunSecond], DunSecond);
+			EnumCards(psrc, lensrc, 5, info, *childDunList, DunSecond);
 			while (c < n) {
 				//返回一个枚举牌型及对应的余牌
 				//按同花顺/铁支/葫芦/同花/顺子/三条/两对/对子/散牌的顺序
 				memset(cpy2, 0, MaxSZ * sizeof(uint8_t));
-				if (!hand.dun[DunSecond].GetNextEnumCards(psrc, lensrc, second, tySecond, cursorSecond, cpy2, cpylen2)) {
+				if (!childDunList->GetNextEnumItem(psrc, lensrc, child, tyChild, cursorChild, cpy2, cpylen2)) {
 					printf("--- *** --------------------------------------------------\n");
-					hand.dun[DunLast].PrintCursorEnumCards();
+					rootDunList->PrintCursorEnumCards();
 					printf("--- *** --------------------------------------------------\n");
 					if (++c >= n) {
 						goto end;
@@ -2277,25 +2287,30 @@ namespace S13S {
 					break;
 				}
 
-				//printf("\n取中墩 = [%s] ", StringCardType(tySecond).c_str());
-				//PrintCardList(&second->front(), second->size());
-				hand.dun[DunSecond].PrintCursorEnumCards();
+				//printf("\n取中墩 = [%s] ", StringCardType(tyChild).c_str());
+				//PrintCardList(&child->front(), child->size());
+				childDunList->PrintCursorEnumCards();
 
 				//除去中墩后的余牌
 				psrc2 = cpy2;
 				lensrc2 = cpylen2;
 
+				//叶子节点：子节点当前枚举项牌型对应余牌枚举子项列表
+				EnumList*& leafDunList = childDunList->GetCursorChildItem(cursorChild);
+				assert(leafDunList == NULL);
+				leafDunList = new EnumList();
+				
 				classify_t info = { 0 };
 				//从余牌中枚举头墩/3张 //////
-				EnumCards(psrc2, lensrc2, 3, info, hand.dun[DunFirst], DunFirst);
+				EnumCards(psrc2, lensrc2, 3, info, *leafDunList, DunFirst);
 				while (c < n) {
 					//返回一个枚举牌型及对应的余牌
 					//按同花顺/铁支/葫芦/同花/顺子/三条/两对/对子/散牌的顺序
 					memset(cpy3, 0, MaxSZ * sizeof(uint8_t));
-					if (!hand.dun[DunFirst].GetNextEnumCards(psrc2, lensrc2, first, tyFirst, cursorFirst, cpy3, cpylen3)) {
+					if (!leafDunList->GetNextEnumItem(psrc2, lensrc2, leaf, tyLeaf, cursorLeaf, cpy3, cpylen3)) {
 						printf("--- *** --------------------------------------------------\n");
-						hand.dun[DunSecond].PrintCursorEnumCards();
-						hand.dun[DunLast].PrintCursorEnumCards();
+						childDunList->PrintCursorEnumCards();
+						rootDunList->PrintCursorEnumCards();
 						printf("--- *** --------------------------------------------------\n");
 						if (++c >= n) {
 							goto end;
@@ -2304,16 +2319,18 @@ namespace S13S {
 					}
 					
 					//如果不是至尊青龙/一条龙(十三水)/十二皇族
-					if (hand.specialTy == TyNil || hand.specialTy == TyThreesc) {
-						if (tyLast == Ty123sc && tySecond == Ty123sc && tyFirst == Ty123sc) {
+					if (hand.specialTy == TyNil || hand.specialTy == TyThreesc || hand.specialTy == TyThree123) {
+						if (tyRoot == Ty123sc && tyChild == Ty123sc && tyLeaf == Ty123sc) {
 							//三同花顺
 							hand.specialTy = TyThree123sc;
 						}
-						else if (tyLast == Ty123 && tySecond == Ty123 && tyFirst == Ty123) {
-							//三顺子
-							hand.specialTy = TyThree123;
+						else if (tyRoot == Ty123 && tyChild == Ty123 && tyLeaf == Ty123) {
+							if (hand.specialTy != TyThree123sc) {
+								//三顺子
+								hand.specialTy = TyThree123;
+							}
 						}
-						else if (tyLast == Tysc && tySecond == Tysc && tyFirst == Tysc) {
+						else if (tyRoot == Tysc && tyChild == Tysc && tyLeaf == Tysc) {
 							if (hand.specialTy == TyNil) {
 								//三同花
 								hand.specialTy = TyThreesc;
@@ -2321,14 +2338,14 @@ namespace S13S {
 						}
 					}
 					
-					//printf("\n取头墩 = [%s] ", StringCardType(tyFirst).c_str());
-					//PrintCardList(&first->front(), first->size());
-					hand.dun[DunFirst].PrintCursorEnumCards();
+					//printf("\n取头墩 = [%s] ", StringCardType(tyLeaf).c_str());
+					//PrintCardList(&leaf->front(), leaf->size());
+					leafDunList->PrintCursorEnumCards();
 
 					printf("--- *** --------------------------------------------------\n");
-					hand.dun[DunFirst].PrintCursorEnumCards();
-					hand.dun[DunSecond].PrintCursorEnumCards();
-					hand.dun[DunLast].PrintCursorEnumCards();
+					leafDunList->PrintCursorEnumCards();
+					childDunList->PrintCursorEnumCards();
+					rootDunList->PrintCursorEnumCards();
 					printf("--- *** --------------------------------------------------\n");
 					if (++c >= n) {
 						goto end;
@@ -2377,65 +2394,57 @@ namespace S13S {
 	}
 
 	//初始化牌墩
-	void CGameLogic::perdun_t::Init(DunTy dt) {
+	void CGameLogic::EnumList::Init(DunTy dt) {
 		//按同花顺/铁支/葫芦/同花/顺子/三条/两对/对子顺序依次进行
 		{
 			c = 0;
 			//同花顺
-			for (std::vector<std::vector<uint8_t>>::const_reverse_iterator it = v123sc.rbegin();
+			for (std::vector<EnumDunCards>::const_reverse_iterator it = v123sc.rbegin();
 				it != v123sc.rend(); ++it) {
-				assert(c < MaxAll);
-				all[c].second = Ty123sc;
-				all[c++].first = &*it;
+				assert(c < MaxEnumSZ);
+				all[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty123sc, &*it), NULL);
 			}
 			//铁支
-			for (std::vector<std::vector<uint8_t>>::const_reverse_iterator it = v40.rbegin();
+			for (std::vector<EnumDunCards>::const_reverse_iterator it = v40.rbegin();
 				it != v40.rend(); ++it) {
-				assert(c < MaxAll);
-				all[c].second = Ty40;
-				all[c++].first = &*it;
+				assert(c < MaxEnumSZ);
+				all[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty40, &*it), NULL);
 			}
 			//葫芦
-			for (std::vector<std::vector<uint8_t>>::const_reverse_iterator it = v32.rbegin();
+			for (std::vector<EnumDunCards>::const_reverse_iterator it = v32.rbegin();
 				it != v32.rend(); ++it) {
-				assert(c < MaxAll);
-				all[c].second = Ty32;
-				all[c++].first = &*it;
+				assert(c < MaxEnumSZ);
+				all[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty32, &*it), NULL);
 			}
 			//同花
-			for (std::vector<std::vector<uint8_t>>::const_reverse_iterator it = vsc.rbegin();
+			for (std::vector<EnumDunCards>::const_reverse_iterator it = vsc.rbegin();
 				it != vsc.rend(); ++it) {
-				assert(c < MaxAll);
-				all[c].second = Tysc;
-				all[c++].first = &*it;
+				assert(c < MaxEnumSZ);
+				all[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Tysc, &*it), NULL);
 			}
 			//顺子
-			for (std::vector<std::vector<uint8_t>>::const_reverse_iterator it = v123.rbegin();
+			for (std::vector<EnumDunCards>::const_reverse_iterator it = v123.rbegin();
 				it != v123.rend(); ++it) {
-				assert(c < MaxAll);
-				all[c].second = Ty123;
-				all[c++].first = &*it;
+				assert(c < MaxEnumSZ);
+				all[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty123, &*it), NULL);
 			}
 			//三条
-			for (std::vector<std::vector<uint8_t>>::const_reverse_iterator it = v30.rbegin();
+			for (std::vector<EnumDunCards>::const_reverse_iterator it = v30.rbegin();
 				it != v30.rend(); ++it) {
-				assert(c < MaxAll);
-				all[c].second = Ty30;
-				all[c++].first = &*it;
+				assert(c < MaxEnumSZ);
+				all[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty30, &*it), NULL);
 			}
 			//两对
-			for (std::vector<std::vector<uint8_t>>::const_reverse_iterator it = v22.rbegin();
+			for (std::vector<EnumDunCards>::const_reverse_iterator it = v22.rbegin();
 				it != v22.rend(); ++it) {
-				assert(c < MaxAll);
-				all[c].second = Ty22;
-				all[c++].first = &*it;
+				assert(c < MaxEnumSZ);
+				all[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty22, &*it), NULL);
 			}
 			//对子
-			for (std::vector<std::vector<uint8_t>>::const_reverse_iterator it = v20.rbegin();
+			for (std::vector<EnumDunCards>::const_reverse_iterator it = v20.rbegin();
 				it != v20.rend(); ++it) {
-				assert(c < MaxAll);
-				all[c].second = Ty20;
-				all[c++].first = &*it;
+				assert(c < MaxEnumSZ);
+				all[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty20, &*it), NULL);
 			}
 			//printf("-- *** all.size = %d\n", c);
 		}
@@ -2446,7 +2455,7 @@ namespace S13S {
 		}
 	}
 	
-	void CGameLogic::perdun_t::Reset() {
+	void CGameLogic::EnumList::Reset() {
 		//按同花顺/铁支/葫芦/同花/顺子/三条/两对/对子顺序依次进行
 		v123sc.clear();
 		v40.clear();
@@ -2461,7 +2470,7 @@ namespace S13S {
 	}
 	
 	//打印枚举牌型
-	void CGameLogic::perdun_t::PrintEnumCards(HandTy ty) {
+	void CGameLogic::EnumList::PrintEnumCards(HandTy ty) {
 		switch (ty)
 		{
 		case SanPai:break;
@@ -2484,7 +2493,7 @@ namespace S13S {
 	}
 
 	//打印枚举牌型
-	void CGameLogic::perdun_t::PrintEnumCards(std::string const& name, HandTy ty, std::vector<std::vector<uint8_t>> const& src) {
+	void CGameLogic::EnumList::PrintEnumCards(std::string const& name, HandTy ty, std::vector<std::vector<uint8_t>> const& src) {
 		if (src.size() > 0) {
 			printf("--- *** 第[%d]墩 - %s[%s]\n", dt_ + 1, name.c_str(), StringCardType(ty).c_str());
 			for (std::vector<std::vector<uint8_t>>::const_reverse_iterator it = src.rbegin();
@@ -2495,45 +2504,53 @@ namespace S13S {
 	}
 
 	//打印游标处枚举牌型
-	void CGameLogic::perdun_t::PrintCursorEnumCards() {
-		std::pair<std::vector<uint8_t> const*, HandTy>const* info = GetCursorInfo(cursor_);
-		if (info) {
-			switch (info->second)
+	void CGameLogic::EnumList::PrintCursorEnumCards() {
+		EnumList::EnumItem const* item = GetCursorItem(cursor_);
+		if (item) {
+			switch (item->first)
 			{
 			case SanPai:break;
-			case Ty20:		PrintCursorEnumCards("对子", info->second, *info->first);	break;//对子
-			case Ty22:		PrintCursorEnumCards("两对", info->second, *info->first);	break;//两对
-			case Ty30:		PrintCursorEnumCards("三条", info->second, *info->first);	break;//三条
-			case Ty123:		PrintCursorEnumCards("顺子", info->second, *info->first);	break;//顺子
-			case Tysc:		PrintCursorEnumCards("同花", info->second, *info->first);	break;//同花
-			case Ty32:		PrintCursorEnumCards("葫芦", info->second, *info->first);	break;//葫芦
-			case Ty40:		PrintCursorEnumCards("铁支", info->second, *info->first);	break;//铁支
-			case Ty123sc:	PrintCursorEnumCards("同花顺", info->second, *info->first); break;//同花顺
+			case Ty20:		PrintCursorEnumCards("对子", item->first, *item->second);	break;//对子
+			case Ty22:		PrintCursorEnumCards("两对", item->first, *item->second);	break;//两对
+			case Ty30:		PrintCursorEnumCards("三条", item->first, *item->second);	break;//三条
+			case Ty123:		PrintCursorEnumCards("顺子", item->first, *item->second);	break;//顺子
+			case Tysc:		PrintCursorEnumCards("同花", item->first, *item->second);	break;//同花
+			case Ty32:		PrintCursorEnumCards("葫芦", item->first, *item->second);	break;//葫芦
+			case Ty40:		PrintCursorEnumCards("铁支", item->first, *item->second);	break;//铁支
+			case Ty123sc:	PrintCursorEnumCards("同花顺", item->first, *item->second);	break;//同花顺
 			}
 		}
 	}
 
 	//打印游标处枚举牌型
-	void CGameLogic::perdun_t::PrintCursorEnumCards(std::string const& name, HandTy ty, std::vector<uint8_t> const& src) {
+	void CGameLogic::EnumList::PrintCursorEnumCards(std::string const& name, HandTy ty, std::vector<uint8_t> const& src) {
 		printf("--- *** 第[%d]墩 - %s[%s]：", dt_ + 1, name.c_str(), StringCardType(ty).c_str());
 		PrintCardList(&src[0], src.size());
 	}
 	
 	//返回游标处枚举牌型
-	std::pair<std::vector<uint8_t> const*, HandTy>const* CGameLogic::perdun_t::GetCursorInfo(int cursor) {
-		return cursor < c ? &all[cursor] : NULL;
+	CGameLogic::EnumList::EnumItem const* CGameLogic::EnumList::GetCursorItem(int cursor) {
+		return cursor < c ? &all[cursor].first : NULL;
+	}
+	
+	//返回游标处枚举牌型对应余牌枚举子项列表指针
+	CGameLogic::EnumList*& CGameLogic::EnumList::GetCursorChildItem(int cursor)/* __attribute__((noreturn))*/ {
+		assert(cursor < c);
+		return all[cursor].second;
 	}
 
 	//返回下一个枚举牌型(从大到小返回)
-	bool CGameLogic::perdun_t::GetNextEnumCards(uint8_t const* src, int len, std::vector<uint8_t> const*& dst, HandTy& ty, int& cursor, uint8_t *cpy, int& cpylen) {
+	bool CGameLogic::EnumList::GetNextEnumItem(uint8_t const* src, int len,
+		CGameLogic::EnumList::EnumCards const*& dst, HandTy& ty,
+		int& cursor, uint8_t *cpy, int& cpylen) {
 		ty = TyNil;
 		cpylen = 0;
 		if (++cursor_ < c) {
-			dst = all[cursor_].first;
-			ty = all[cursor_].second;
+			ty = all[cursor_].first.first;
+			dst = all[cursor_].first.second;
 			cursor = cursor_;
 			for (int i = 0; i < len; ++i) {
-				std::vector<uint8_t>::const_iterator it;
+				EnumCards::const_iterator it;
 				for (it = dst->begin(); it != dst->end(); ++it) {
 					if (src[i] == *it) {
 						//src[i]在dst中存在了
@@ -2597,9 +2614,9 @@ namespace S13S {
 	//src uint8_t const* 手牌余牌(13/8/3)，初始13张，按5/5/3依次抽，余牌依次为13/8/3
 	//n int 抽取n张(5/5/3) 第一次抽5张余8张，第二次抽5张余3张，第三次取余下3张抽完
 	//info classify_t& 存放分类信息(所有重复四张/三张/二张/散牌/余牌)
-	//dun perdun_t& 存放指定墩数据 dt DunTy 指定为第几墩
+	//dun EnumList& 存放指定墩数据 dt DunTy 指定为第几墩
 	void CGameLogic::EnumCards(uint8_t const* src, int len,
-		int n, classify_t& info, perdun_t& dun, DunTy dt) {
+		int n, classify_t& info, EnumList& dun, DunTy dt) {
 		printf("\n\n--- *** EnumCards(%d, %d) from ", len, n);
 		PrintCardList(src, len);
 		//int c4 = 0, c3 = 0, c2 = 0;
@@ -2674,6 +2691,15 @@ namespace S13S {
 		}
 	}
 	
+	//玩家手牌类型
+	HandTy CGameLogic::GetHandCardsType(handinfo_t& hand, DunTy dt)
+	{
+		if (hand.specialTy != TyNil) {
+			return hand.specialTy;
+		}
+		EnumList& dun = hand.dun[dt];
+
+	}
 
 #if 0
 	//从src中抽取连续n张牌到dst中
@@ -2835,12 +2861,6 @@ namespace S13S {
 		}
 		}//{{switch}}
 		return succ;
-	}
-	
-	//玩家手牌类型
-	HandTy CGameLogic::GetHandCardsType(uint8_t *cards)
-	{
-		return SanPai;
 	}
 #endif
 

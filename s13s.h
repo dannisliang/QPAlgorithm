@@ -111,7 +111,7 @@ namespace S13S {
 	//手牌占位条码mark大小 14
 	//牌值对应占位->A,2,,,K,0 牌点对应占位->0,2,,,K,A
 	int const MaxSZ = K + 1;
-	int const MaxAll = 1500;
+	int const MaxEnumSZ = 1500;
 
 	//游戏逻辑类
 	class CGameLogic
@@ -179,13 +179,18 @@ namespace S13S {
 		//生成n张牌<-"♦A ♦3 ♥3 ♥4 ♦5 ♣5 ♥5 ♥6 ♣7 ♥7 ♣9 ♣10 ♣J"
 		static int MakeCardList(string const& strcards, uint8_t *cards, int size);
 	public:
-		//perdun_t 每墩枚举牌型 /////////////
-		class perdun_t {
+		//EnumList 枚举一墩牌型的所有可能，多叉树结构 /////////////
+		class EnumList {
 		public:
-			perdun_t() {
+			//枚举牌，枚举一墩牌，5/3张
+			typedef std::vector<uint8_t> EnumCards, EnumDunCards;
+			//枚举项，pair<牌型，一墩牌>
+			typedef std::pair<HandTy, EnumCards const*> EnumItem;
+		public:
+			EnumList() {
 				Reset();
 			}
-			~perdun_t() {
+			~EnumList() {
 				Reset();
 			}
 			//初始化牌墩
@@ -200,34 +205,36 @@ namespace S13S {
 			//打印游标处枚举牌型
 			void PrintCursorEnumCards(std::string const& name, HandTy ty, std::vector<uint8_t> const& src);
 			//返回游标处枚举牌型
-			std::pair<std::vector<uint8_t> const*, HandTy>const* GetCursorInfo(int cursor);
+			EnumItem const* GetCursorItem(int cursor);
+			//返回游标处枚举牌型对应余牌枚举子项列表指针
+			EnumList*& GetCursorChildItem(int cursor);
 			//返回下一个枚举牌型(从大到小返回)
-			bool GetNextEnumCards(uint8_t const* src, int len,
-				std::vector<uint8_t> const*& dst,
-				HandTy& ty, int& cursor, uint8_t *cpy, int& cpylen);
+			bool GetNextEnumItem(uint8_t const* src, int len,
+				EnumCards const*& dst, HandTy& ty,
+				int& cursor, uint8_t *cpy, int& cpylen);
 		public:
 			//所有同花色五张/三张连续牌(五张/三张同花顺)
-			std::vector<std::vector<uint8_t>> v123sc;
+			std::vector<EnumDunCards> v123sc;
 			//所有铁支(四张)
-			std::vector<std::vector<uint8_t>> v40;
+			std::vector<EnumDunCards> v40;
 			//所有葫芦(一组三条加上一组对子)
-			std::vector<std::vector<uint8_t>> v32;
+			std::vector<EnumDunCards> v32;
 			//所有同花五张/三张非连续牌(五张/三张同花)
-			std::vector<std::vector<uint8_t>> vsc;
+			std::vector<EnumDunCards> vsc;
 			//所有非同花五张/三张连续牌(五张/三张顺子)
-			std::vector<std::vector<uint8_t>> v123;
+			std::vector<EnumDunCards> v123;
 			//所有三条(三张)
-			std::vector<std::vector<uint8_t>> v30;
+			std::vector<EnumDunCards> v30;
 			//所有两对(两个对子)
-			std::vector<std::vector<uint8_t>> v22;
+			std::vector<EnumDunCards> v22;
 			//所有对子(一对)
-			std::vector<std::vector<uint8_t>> v20;
+			std::vector<EnumDunCards> v20;
 		public:
 			DunTy dt_;
 			//遍历游标
 			int c, cursor_;
-			//pair<枚举牌列表,类型>
-			std::pair<std::vector<uint8_t> const*, HandTy> all[MaxAll];
+			//pair<枚举项牌型，对应余牌枚举子项列表>，多叉树结构
+			std::pair<EnumItem, EnumList*> all[MaxEnumSZ];
 		};
 		//classify_t 分类牌型 /////////////
 		struct classify_t {
@@ -251,7 +258,7 @@ namespace S13S {
 			handinfo_t() {
 				//必须用成员结构体指针形式来new结构体成员对象，否则类成员变量数据会错乱，
 				//只要类成员结构体嵌入vector/string这些STL对象会出问题，编译器bug???
-				dun = new perdun_t[DunMax];
+				dun = new EnumList[DunMax];
 				Reset();
 			}
 			~handinfo_t() {
@@ -267,8 +274,11 @@ namespace S13S {
 		public:
 			int chairID;		//玩家座椅ID
 			HandTy specialTy;	//特殊牌型
-			perdun_t *dun;		//尾墩[2]5张/中墩[1]5张/头墩[0]3张
+			EnumList *dun;		//尾墩[2]5张/中墩[1]5张/头墩[0]3张
 		};
+	public:
+		//玩家手牌类型
+		static HandTy GetHandCardsType(handinfo_t& hand, DunTy dt);
 	public:
 		//枚举牌型测试
 		static void TestEnumCards();
@@ -287,9 +297,9 @@ namespace S13S {
 		//src uint8_t const* 手牌余牌(13/8/3)，初始13张，按5/5/3依次抽，余牌依次为13/8/3
 		//n int 抽取n张(5/5/3) 第一次抽5张余8张，第二次抽5张余3张，第三次取余下3张抽完
 		//info classify_t& 存放分类信息(所有重复四张/三张/二张/散牌/余牌)
-		//dun perdun_t& 存放指定墩数据 dt DunTy 指定为第几墩
+		//dun EnumList& 存放指定墩数据 dt DunTy 指定为第几墩
 		static void EnumCards(uint8_t const* src, int len,
-			int n, classify_t& info, perdun_t& dun, DunTy dt);
+			int n, classify_t& info, EnumList& dun, DunTy dt);
 		//按照尾墩5张/中墩5张/头墩3张依次抽取枚举普通牌型
 		//src uint8_t const* 手牌余牌(13/8/3)，初始13张，按5/5/3依次抽，余牌依次为13/8/3
 		//n int 抽取n张(5/5/3) 第一次抽5张余8张，第二次抽5张余3张，第三次取余下3张抽完
@@ -536,9 +546,6 @@ namespace S13S {
 		static HandTy CheckAllBig(uint8_t const* src, int len);
 		//全小：全是2至8的牌型
 		static HandTy CheckAllSmall(uint8_t const* src, int len);
-	public:
-		//玩家手牌类型
-		//static HandTy GetHandCardsType(uint8_t *cards);
 	private:
 		int8_t index_;
 		uint8_t cardsData_[MaxCardTotal];
