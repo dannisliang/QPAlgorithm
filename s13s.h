@@ -186,6 +186,8 @@ namespace S13S {
 			typedef std::vector<uint8_t> EnumCards, EnumDunCards;
 			//枚举项，pair<牌型，一墩牌>
 			typedef std::pair<HandTy, EnumCards const*> EnumItem;
+			//树结构，pair<枚举项，子枚举项列表>
+			typedef std::pair<EnumItem, EnumList*>  TreeEnumItem;
 		public:
 			EnumList() {
 				Reset();
@@ -234,7 +236,7 @@ namespace S13S {
 			//遍历游标
 			int c, cursor_;
 			//pair<枚举项牌型，对应余牌枚举子项列表>，多叉树结构
-			std::pair<EnumItem, EnumList*> all[MaxEnumSZ];
+			std::pair<EnumItem, EnumList*> tree[MaxEnumSZ];
 		};
 		//classify_t 分类牌型 /////////////
 		struct classify_t {

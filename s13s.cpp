@@ -2402,49 +2402,49 @@ namespace S13S {
 			for (std::vector<EnumDunCards>::const_reverse_iterator it = v123sc.rbegin();
 				it != v123sc.rend(); ++it) {
 				assert(c < MaxEnumSZ);
-				all[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty123sc, &*it), NULL);
+				tree[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty123sc, &*it), NULL);
 			}
 			//铁支
 			for (std::vector<EnumDunCards>::const_reverse_iterator it = v40.rbegin();
 				it != v40.rend(); ++it) {
 				assert(c < MaxEnumSZ);
-				all[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty40, &*it), NULL);
+				tree[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty40, &*it), NULL);
 			}
 			//葫芦
 			for (std::vector<EnumDunCards>::const_reverse_iterator it = v32.rbegin();
 				it != v32.rend(); ++it) {
 				assert(c < MaxEnumSZ);
-				all[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty32, &*it), NULL);
+				tree[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty32, &*it), NULL);
 			}
 			//同花
 			for (std::vector<EnumDunCards>::const_reverse_iterator it = vsc.rbegin();
 				it != vsc.rend(); ++it) {
 				assert(c < MaxEnumSZ);
-				all[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Tysc, &*it), NULL);
+				tree[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Tysc, &*it), NULL);
 			}
 			//顺子
 			for (std::vector<EnumDunCards>::const_reverse_iterator it = v123.rbegin();
 				it != v123.rend(); ++it) {
 				assert(c < MaxEnumSZ);
-				all[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty123, &*it), NULL);
+				tree[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty123, &*it), NULL);
 			}
 			//三条
 			for (std::vector<EnumDunCards>::const_reverse_iterator it = v30.rbegin();
 				it != v30.rend(); ++it) {
 				assert(c < MaxEnumSZ);
-				all[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty30, &*it), NULL);
+				tree[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty30, &*it), NULL);
 			}
 			//两对
 			for (std::vector<EnumDunCards>::const_reverse_iterator it = v22.rbegin();
 				it != v22.rend(); ++it) {
 				assert(c < MaxEnumSZ);
-				all[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty22, &*it), NULL);
+				tree[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty22, &*it), NULL);
 			}
 			//对子
 			for (std::vector<EnumDunCards>::const_reverse_iterator it = v20.rbegin();
 				it != v20.rend(); ++it) {
 				assert(c < MaxEnumSZ);
-				all[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty20, &*it), NULL);
+				tree[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty20, &*it), NULL);
 			}
 			//printf("-- *** all.size = %d\n", c);
 		}
@@ -2530,13 +2530,13 @@ namespace S13S {
 	
 	//返回游标处枚举牌型
 	CGameLogic::EnumList::EnumItem const* CGameLogic::EnumList::GetCursorItem(int cursor) {
-		return cursor < c ? &all[cursor].first : NULL;
+		return cursor < c ? &tree[cursor].first : NULL;
 	}
 	
 	//返回游标处枚举牌型对应余牌枚举子项列表指针
 	CGameLogic::EnumList*& CGameLogic::EnumList::GetCursorChildItem(int cursor)/* __attribute__((noreturn))*/ {
 		assert(cursor < c);
-		return all[cursor].second;
+		return tree[cursor].second;
 	}
 
 	//返回下一个枚举牌型(从大到小返回)
@@ -2546,8 +2546,8 @@ namespace S13S {
 		ty = TyNil;
 		cpylen = 0;
 		if (++cursor_ < c) {
-			ty = all[cursor_].first.first;
-			dst = all[cursor_].first.second;
+			ty = tree[cursor_].first.first;
+			dst = tree[cursor_].first.second;
 			cursor = cursor_;
 			for (int i = 0; i < len; ++i) {
 				EnumCards::const_iterator it;
