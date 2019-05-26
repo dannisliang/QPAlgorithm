@@ -816,14 +816,14 @@ namespace S13S {
 		return v0 < v1;
 	}
 	static bool byPointG(const uint8_t(*const a)[4], const uint8_t(*const b)[4]) {
-		uint8_t v0 = CGameLogic::GetCardPoint(a[0][0]);
-		uint8_t v1 = CGameLogic::GetCardPoint(b[0][0]);
-		return v0 > v1;
+		uint8_t p0 = CGameLogic::GetCardPoint(a[0][0]);
+		uint8_t p1 = CGameLogic::GetCardPoint(b[0][0]);
+		return p0 > p1;
 	}
 	static bool byPointL(const uint8_t(*const a)[4], const uint8_t(*const b)[4]) {
-		uint8_t v0 = CGameLogic::GetCardPoint(a[0][0]);
-		uint8_t v1 = CGameLogic::GetCardPoint(b[0][0]);
-		return v0 < v1;
+		uint8_t p0 = CGameLogic::GetCardPoint(a[0][0]);
+		uint8_t p1 = CGameLogic::GetCardPoint(b[0][0]);
+		return p0 < p1;
 	}
 	static void SortCards_src(uint8_t(**const psrc)[4], int n, bool byValue, bool ascend) {
 		if (byValue) {
