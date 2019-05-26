@@ -111,7 +111,7 @@ namespace S13S {
 	//手牌占位条码mark大小 14
 	//牌值对应占位->A,2,,,K,0 牌点对应占位->0,2,,,K,A
 	int const MaxSZ = K + 1;
-	int const MaxAll = 500;
+	int const MaxAll = 1500;
 
 	//游戏逻辑类
 	class CGameLogic

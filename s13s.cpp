@@ -2117,8 +2117,8 @@ namespace S13S {
 	bool CGameLogic::CheckSameColorCards(uint8_t const* src, int len)
 	{
 		for (int i = 0; i < len - 1; ++i) {
-			uint8_t c0 = GetCardValue(src[i]);
-			uint8_t c1 = GetCardValue(src[i + 1]);
+			uint8_t c0 = GetCardColor(src[i]);
+			uint8_t c1 = GetCardColor(src[i + 1]);
 			if (c0 != c1) {
 				//有不同花色的牌
 				return false;
@@ -2307,12 +2307,16 @@ namespace S13S {
 							hand.specialTy = TyThree123sc;
 						}
 						else if (tyLast == Ty123 && tySecond == Ty123 && tyFirst == Ty123) {
-							//三顺子
-							hand.specialTy = TyThree123;
+							if (hand.specialTy == NULL) {
+								//三顺子
+								hand.specialTy = TyThree123;
+							}
 						}
 						else if (tyLast == Tysc && tySecond == Tysc && tyFirst == Tysc) {
-							//三同花
-							hand.specialTy = TyThreesc;
+							if (hand.specialTy == NULL) {
+								//三同花
+								hand.specialTy = TyThreesc;
+							}
 						}
 					}
 					
@@ -2432,6 +2436,7 @@ namespace S13S {
 				all[c].second = Ty20;
 				all[c++].first = &*it;
 			}
+			//printf("-- *** all.size = %d\n", c);
 		}
 		{
 			dt_ = dt;
@@ -2637,7 +2642,7 @@ namespace S13S {
 			CGameLogic::SortCards(cards, MaxCount, true, true, true);
 			printf("=================================================\n\n");
  			int c = g.AnalyseHandCards(cards, MaxCount, 20, hand);
-			hand.PrintEnumCards(DunLast);
+			//hand.PrintEnumCards(DunLast);
 			printf("--- *** c = %d %s\n\n\n\n", c, hand.StringSpecialTy().c_str());
 			//同花顺/同花/顺子/铁支都存在时暂停
 			pause = (hand.dun[DunLast].v123sc.size() > 0 &&
@@ -2662,7 +2667,7 @@ namespace S13S {
 			//assert(n == 13);
 			CGameLogic::SortCards(cards, n, true, true, true);
 			int c = g.AnalyseHandCards(cards, n, 20, hand);
-			hand.PrintEnumCards(DunLast);
+			//hand.PrintEnumCards(DunLast);
 			printf("--- *** c = %d %s\n\n\n\n", c, hand.StringSpecialTy().c_str());
 		}
 		else {
