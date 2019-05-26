@@ -11,9 +11,11 @@
 		十三水算法接口说明：
 			//枚举牌型测试
 			static void TestEnumCards();
+			
 			//枚举牌型测试
 			//filename char const* 文件读取手牌 cardsList.ini
 			static void TestEnumCards(char const* filename);
+			
 			//手牌牌型分析(特殊牌型判断/枚举三墩组合)，算法入口 /////////
 			//src uint8_t const* 一副手牌(13张)
 			//n int 最大枚举多少组墩(头墩&中墩&尾墩加起来为一组)
