@@ -2632,9 +2632,9 @@ namespace S13S {
 		g.ShuffleCards();
 		bool pause = false;
 		while (1) {
-			//if (pause) {
+			if (pause) {
 				getchar();
-			//}
+			}
 			if (g.Remaining() < 13) {
 				g.ShuffleCards();
 			}
@@ -2646,10 +2646,7 @@ namespace S13S {
 			//hand.PrintEnumCards(DunLast);
 			printf("--- *** c = %d %s\n\n\n\n", c, hand.StringSpecialTy().c_str());
 			//同花顺/同花/顺子/铁支都存在时暂停
-			pause = (hand.dun[DunLast].v123sc.size() > 0 &&
-				hand.dun[DunLast].vsc.size() > 0 &&
-				hand.dun[DunLast].v123.size() > 0 &&
-				hand.dun[DunLast].v40.size() > 0);
+			pause = (hand.specialTy != SSS::TyNil);
 		}
 	}
 
