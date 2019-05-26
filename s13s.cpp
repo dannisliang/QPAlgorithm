@@ -2301,19 +2301,17 @@ namespace S13S {
 					}
 					
 					//如果不是至尊青龙/一条龙(十三水)/十二皇族
-					if (hand.specialTy == TyNil) {
+					if (hand.specialTy == TyNil || hand.specialTy == TyThreesc) {
 						if (tyLast == Ty123sc && tySecond == Ty123sc && tyFirst == Ty123sc) {
 							//三同花顺
 							hand.specialTy = TyThree123sc;
 						}
 						else if (tyLast == Ty123 && tySecond == Ty123 && tyFirst == Ty123) {
-							if (hand.specialTy == NULL) {
-								//三顺子
-								hand.specialTy = TyThree123;
-							}
+							//三顺子
+							hand.specialTy = TyThree123;
 						}
 						else if (tyLast == Tysc && tySecond == Tysc && tyFirst == Tysc) {
-							if (hand.specialTy == NULL) {
+							if (hand.specialTy == TyNil) {
 								//三同花
 								hand.specialTy = TyThreesc;
 							}
@@ -2677,9 +2675,6 @@ namespace S13S {
 	
 
 #if 0
-	
-	
-
 	//从src中抽取连续n张牌到dst中
 	//src uint8_t* 牌源
 	//ty FetchTy 抽取类型
