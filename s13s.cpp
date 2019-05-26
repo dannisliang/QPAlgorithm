@@ -2655,6 +2655,7 @@ namespace S13S {
 	void CGameLogic::TestEnumCards(char const* filename) {
 		std::vector<string> lines;
 		readFile(filename, lines, ";;");
+		assert(lines.size() == 2);
 		int flag = atoi(lines[0].c_str());
 		//1->文件读取手牌 0->随机生成13张牌
 		if (flag > 0) {
