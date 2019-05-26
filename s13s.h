@@ -262,6 +262,8 @@ namespace S13S {
 			void PrintEnumCards(DunTy dt, HandTy ty = TyAllBase);
 			//打印游标处枚举牌型
 			void PrintCursorEnumCards(DunTy dt);
+			//返回特殊牌型字符串
+			std::string StringSpecialTy();
 		public:
 			int chairID;		//玩家座椅ID
 			HandTy specialTy;	//特殊牌型

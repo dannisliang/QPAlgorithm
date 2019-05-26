@@ -2145,7 +2145,7 @@ namespace S13S {
 			//十二皇族：十三张全是J，Q，K，A的牌型
 			int i = 0;
 			while (i < len) {
-				uint8_t v = GetCardValue(src[i]);
+				uint8_t v = GetCardValue(src[i++]);
 				if (v != A) {
 					if (v >= J) {
 						//牌值从小到大
@@ -2558,6 +2558,34 @@ namespace S13S {
 	void CGameLogic::handinfo_t::PrintCursorEnumCards(DunTy dt) {
 		dun[dt].PrintCursorEnumCards();
 	}
+	
+	static std::string CNStringTy(char const* name, char const* ty) {
+		char ch[50] = { 0 };
+		sprintf(ch,"%s[%s]", name, ty);
+		return ch;
+	}
+	
+	//返回特殊牌型字符串
+	std::string CGameLogic::handinfo_t::StringSpecialTy() {
+		switch (specialTy)
+		{
+		case TyThreesc:		return CNStringTy("三同花", "TyThreesc");
+		case TyThree123:	return CNStringTy("三顺子", "TyThree123");
+		case TySix20:		return CNStringTy("六对半", "TySix20");
+		case TyFive2030:	return CNStringTy("五对三条", "TyFive2030");
+		case TyFour30:		return CNStringTy("四套三条", "TyFour30");
+		case TyTwo3220:		return CNStringTy("双怪冲三", "TyTwo3220");
+		case TyOneColor:	return CNStringTy("凑一色", "TyOneColor");
+		case TyAllSmall:	return CNStringTy("全小", "TyAllSmall");
+		case TyAllBig:		return CNStringTy("全大", "TyAllBig");
+		case TyThree40:		return CNStringTy("三分天下", "TyThree40");
+		case TyThree123sc:	return CNStringTy("三同花顺", "TyThree123sc");
+		case Ty12Royal:		return CNStringTy("十二皇族", "Ty12Royal");
+		case TyOneDragon:	return CNStringTy("一条龙", "TyOneDragon");
+		case TyZZQDragon:	return CNStringTy("至尊青龙", "TyZZQDragon");
+		}
+		return "";
+	}
 
 	//按照尾墩5张/中墩5张/头墩3张依次抽取枚举普通牌型
 	//src uint8_t const* 手牌余牌(13/8/3)，初始13张，按5/5/3依次抽，余牌依次为13/8/3
@@ -2609,8 +2637,8 @@ namespace S13S {
 			CGameLogic::SortCards(cards, MaxCount, true, true, true);
 			printf("=================================================\n\n");
  			int c = g.AnalyseHandCards(cards, MaxCount, 20, hand);
-			printf("--- *** c = %d\n\n\n\n", c);
 			hand.PrintEnumCards(DunLast);
+			printf("--- *** c = %d %s\n\n\n\n", c, hand.StringSpecialTy().c_str());
 			//同花顺/同花/顺子/铁支都存在时暂停
 			pause = (hand.dun[DunLast].v123sc.size() > 0 &&
 				hand.dun[DunLast].vsc.size() > 0 &&
@@ -2634,8 +2662,8 @@ namespace S13S {
 			//assert(n == 13);
 			CGameLogic::SortCards(cards, n, true, true, true);
 			int c = g.AnalyseHandCards(cards, n, 20, hand);
-			printf("--- *** c = %d\n\n\n\n", c);
 			hand.PrintEnumCards(DunLast);
+			printf("--- *** c = %d %s\n\n\n\n", c, hand.StringSpecialTy().c_str());
 		}
 		else {
 			TestEnumCards();
