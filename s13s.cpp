@@ -2149,7 +2149,7 @@ namespace S13S {
 				if (v != A) {
 					if (v >= J) {
 						//牌值从小到大
-						specialTy = TyAllBig;
+						specialTy = Ty12Royal;
 					}
 					break;
 				}
