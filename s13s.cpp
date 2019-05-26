@@ -492,7 +492,7 @@ namespace S13S {
 		case TyFive2030:	return "TyFive2030";
 		case TyFour30:	return "TyFour30";
 		case TyTwo3220:	return "TyTwo3220";
-		case TyOneColor:	return "TyOneColor";
+		case TyAllOneColor:	return "TyAllOneColor";
 		case TyAllSmall:	return "TyAllSmall";
 		case TyAllBig:	return "TyAllBig";
 		case TyThree40:	return "TyThree40";
@@ -2159,8 +2159,8 @@ namespace S13S {
 	}
 	
 	//凑一色：全是红牌(方块/红心)或黑牌(黑桃/梅花)
-	HandTy CGameLogic::CheckCouOneColor(uint8_t const* src, int len) {
-		HandTy specialTy = TyOneColor;
+	HandTy CGameLogic::CheckAllOneColor(uint8_t const* src, int len) {
+		HandTy specialTy = TyAllOneColor;
 		uint8_t c0 = GetCardColor(src[0]);
 		switch (c0)
 		{
@@ -2191,7 +2191,7 @@ namespace S13S {
 		HandTy specialTy = TyNil;
 		int i = 0;
 		while (i < len) {
-			uint8_t v = GetCardValue(src[i]);
+			uint8_t v = GetCardValue(src[i++]);
 			if (v != A) {
 				if (v >= 8) {
 					//全大/牌值从小到大
@@ -2351,7 +2351,7 @@ namespace S13S {
 				//全小/牌值从小到大
 				hand.specialTy = specialTy;
 			}
-			else if ((specialTy = CheckCouOneColor(src, len)) == TyOneColor) {
+			else if ((specialTy = CheckAllOneColor(src, len)) == TyAllOneColor) {
 				//凑一色：全是红牌(方块/红心)或黑牌(黑桃/梅花)
 				hand.specialTy = specialTy;
 			}
@@ -2580,7 +2580,7 @@ namespace S13S {
 		case TyFive2030:	return CNStringTy("五对三条", "TyFive2030");
 		case TyFour30:		return CNStringTy("四套三条", "TyFour30");
 		case TyTwo3220:		return CNStringTy("双怪冲三", "TyTwo3220");
-		case TyOneColor:	return CNStringTy("凑一色", "TyOneColor");
+		case TyAllOneColor:	return CNStringTy("凑一色", "TyAllOneColor");
 		case TyAllSmall:	return CNStringTy("全小", "TyAllSmall");
 		case TyAllBig:		return CNStringTy("全大", "TyAllBig");
 		case TyThree40:		return CNStringTy("三分天下", "TyThree40");
