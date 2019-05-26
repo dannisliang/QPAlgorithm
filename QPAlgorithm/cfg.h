@@ -1,4 +1,8 @@
-﻿#ifndef CFG_H
+﻿//
+// Created by andy_ro@qq.com
+// 			5/26/2019
+//
+#ifndef CFG_H
 #define CFG_H
 
 #include <sys/types.h>

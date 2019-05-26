@@ -1,4 +1,8 @@
-﻿#ifndef FUNC_C_H
+﻿//
+// Created by andy_ro@qq.com
+// 			5/26/2019
+//
+#ifndef FUNC_C_H
 #define FUNC_C_H
 
 #include <sys/types.h>
