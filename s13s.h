@@ -65,7 +65,7 @@ namespace S13S {
 		TyFive2030,		//五对三条(五对冲三)：五个对子加上一个三条
 		TyFour30,		//四套三条(四套冲三)：四个三条加上一张单张的牌型
 		TyTwo3220,		//双怪冲三：二对葫芦加上一个对子加上一张单张的牌型
-		TyOneColor,		//凑一色：全是红牌(方块/红心)或黑牌(黑桃/梅花)的牌型
+		TyAllOneColor,	//凑一色：全是红牌(方块/红心)或黑牌(黑桃/梅花)的牌型
 		TyAllSmall,		//全小：全是2至8的牌型
 		TyAllBig,		//全大：全是8至A的牌型
 		TyThree40,		//三分天下(三套炸弹)：三副炸弹(四张值相同)加上一张单张的牌型
@@ -531,7 +531,7 @@ namespace S13S {
 		//至尊青龙/一条龙(十三水)/十二皇族
 		static HandTy CheckDragonRoyal(uint8_t const* src, int len);
 		//凑一色：全是红牌(方块/红心)或黑牌(黑桃/梅花)
-		static HandTy CheckCouOneColor(uint8_t const* src, int len);
+		static HandTy CheckAllOneColor(uint8_t const* src, int len);
 		//全大：全是8至A的牌型
 		static HandTy CheckAllBig(uint8_t const* src, int len);
 		//全小：全是2至8的牌型
