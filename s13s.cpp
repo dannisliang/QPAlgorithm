@@ -67,10 +67,13 @@ namespace S13S {
 	void CGameLogic::ShuffleCards()
 	{
 		//printf("-- *** 洗牌...\n");
-		int c = rand() % 20 + 5;
+		static uint32_t seed = (uint32_t)time(NULL);
+		//int c = rand() % 20 + 5;
+		int c = rand_r(&seed) % 20 + 5;
 		for (int k = 0; k < c; ++k) {
 			for (int i = 0; i < MaxCardTotal; ++i) {
-				int j = rand() % MaxCardTotal;
+				//int j = rand() % MaxCardTotal;
+				int j = rand_r(&seed) % MaxCardTotal;
 				if (i != j) {
 					swap(cardsData_[i], cardsData_[j]);
 				}
