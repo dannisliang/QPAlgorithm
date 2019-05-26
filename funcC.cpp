@@ -2,7 +2,6 @@
 // Created by andy_ro@qq.com
 // 			5/26/2019
 //
-
 #include <time.h>
 #include <algorithm>
 #include "math.h"

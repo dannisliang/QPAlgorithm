@@ -1,4 +1,8 @@
-﻿#ifndef GAME_LOGIC_S13S_H
+﻿//
+// Created by andy_ro@qq.com
+// 			5/26/2019
+//
+#ifndef GAME_LOGIC_S13S_H
 #define GAME_LOGIC_S13S_H
 
 #include <sys/types.h>
