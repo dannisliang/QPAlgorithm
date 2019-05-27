@@ -2224,7 +2224,7 @@ namespace S13S {
 	//chairID int 玩家座椅ID
 	//hand handinfo_t& 保存手牌信息
 	int CGameLogic::AnalyseHandCards(uint8_t const* src, int len, int n, handinfo_t& hand) {
-		
+		int c = 0;
 		uint8_t cpy[MaxSZ] = {0}, cpy2[MaxSZ] = { 0 }, cpy3[MaxSZ] = { 0 };
 		int cpylen = 0, cpylen2 = 0, cpylen3 = 0;
 
@@ -2235,25 +2235,18 @@ namespace S13S {
 		int cursorLeaf = 0, cursorChild = 0, cursorRoot = 0;
 		HandTy tyLeaf = TyNil, tyChild = TyNil, tyRoot = TyNil;
 		EnumList::EnumCards const *leaf = NULL, *child = NULL, *root = NULL;
-		//保存枚举墩数据
-		std::vector<EnumList::TraverseTreeNode> dunList;
-		hand.Reset();
 		
-		//根节点：初始枚举项列表
+		hand.Reset();
+
+		//保存枚举墩，尾墩[2]5张/中墩[1]5张/头墩[0]3张
+		std::vector<EnumList::TraverseTreeNode>& dunList = hand.dunList;
+		//根节点：初始枚举牌型项列表
 		EnumList *& rootEnumList = hand.rootEnumList;
 
-		int c = 0;
 		classify_t info = { 0 };
 		//枚举尾墩/5张 //////
 		EnumCards(src, len, 5, info, *rootEnumList, DunLast);
-		
-		//指向父节点/对应父节点游标位置
-		//childEnumList->parent_ = NULL;
-		//childEnumList->parentcursor_ = -1;
 
-		//至尊青龙/一条龙(十三水)/十二皇族
-		hand.specialTy = CheckDragonRoyal(src, len);
-		
 	end:
 		while (c < n) {
 			//返回一个枚举牌型及对应的余牌
@@ -2361,6 +2354,21 @@ namespace S13S {
 				}
 			}
 		}
+		hand.CalcHandCardsType(src, len, info);
+		return c;
+	}
+	
+	//确定手牌牌型
+	void CGameLogic::handinfo_t::CalcHandCardsType(uint8_t const* src, int len, classify_t& info) {
+		
+		//叶子节点(头墩)/子节点(中墩)/根节点(尾墩)
+		int cursorLeaf = 0, cursorChild = 0, cursorRoot = 0;
+		HandTy tyLeaf = TyNil, tyChild = TyNil, tyRoot = TyNil;
+		EnumList::EnumCards const *leaf = NULL, *child = NULL, *root = NULL;
+
+		//至尊青龙/一条龙(十三水)/十二皇族
+		specialTy_ = CheckDragonRoyal(src, len);
+
 		//遍历枚举出来的每组牌型(头墩&中墩&尾墩加起来为一组) ////////////////////////////
 		for (std::vector<EnumList::TraverseTreeNode>::iterator it = dunList.begin();
 			it != dunList.end(); ++it) {
@@ -2371,7 +2379,7 @@ namespace S13S {
 			switch (nodeLeaf->dt_)
 			{
 			case DunLast: {
-				
+
 				break;
 			}
 			case DunSecond: {
@@ -2406,68 +2414,67 @@ namespace S13S {
 					root = rootItem.second;
 				}
 				//如果不是至尊青龙/一条龙(十三水)/十二皇族
-				if (hand.specialTy != TyZZQDragon && hand.specialTy != TyOneDragon && hand.specialTy != Ty12Royal) {
+				if (specialTy_ != TyZZQDragon && specialTy_ != TyOneDragon && specialTy_ != Ty12Royal) {
 					if (tyRoot == Ty123sc && tyChild == Ty123sc && tyLeaf == Ty123sc) {
 						//三同花顺
-						hand.specialTy = TyThree123sc;
+						specialTy_ = TyThree123sc;
 					}
 					else if (tyRoot == Ty123 && tyChild == Ty123 && tyLeaf == Ty123) {
 						//如果不是同花顺
-						if (hand.specialTy != TyThree123sc) {
+						if (specialTy_ != TyThree123sc) {
 							//三顺子
-							hand.specialTy = TyThree123;
+							specialTy_ = TyThree123;
 						}
 					}
 					else if (tyRoot == Tysc && tyChild == Tysc && tyLeaf == Tysc) {
 						//如果不是同花顺且不是三顺子
-						if (hand.specialTy != TyThree123sc && hand.specialTy != TyThree123) {
+						if (specialTy_ != TyThree123sc && specialTy_ != TyThree123) {
 							//三同花
-							hand.specialTy = TyThreesc;
+							specialTy_ = TyThreesc;
 						}
 					}
 				}
 				break;
-				}
+			}
 			}
 		}
 		//如果不是至尊青龙/一条龙(十三水)/十二皇族/三同花顺
-		if (hand.specialTy != TyZZQDragon && hand.specialTy != TyOneDragon &&
-			hand.specialTy != Ty12Royal && hand.specialTy != TyThree123sc) {
+		if (specialTy_ != TyZZQDragon && specialTy_ != TyOneDragon &&
+			specialTy_ != Ty12Royal && specialTy_ != TyThree123sc) {
 			HandTy specialTy = TyNil;
 			if (info.c4 == 3) {
 				//三分天下(三套炸弹)
-				hand.specialTy = TyThree40;
+				specialTy_ = TyThree40;
 			}
 			else if ((specialTy = CheckAllBig(src, len)) == TyAllBig) {
 				//全大/牌值从小到大
-				hand.specialTy = specialTy;
+				specialTy_ = specialTy;
 			}
 			else if ((specialTy = CheckAllSmall(src, len)) == TyAllSmall) {
 				//全小/牌值从小到大
-				hand.specialTy = specialTy;
+				specialTy_ = specialTy;
 			}
 			else if ((specialTy = CheckAllOneColor(src, len)) == TyAllOneColor) {
 				//凑一色：全是红牌(方块/红心)或黑牌(黑桃/梅花)
-				hand.specialTy = specialTy;
+				specialTy_ = specialTy;
 			}
 			else if (info.c3 == 2 && info.c2 == 3) {
 				//双怪冲三
-				hand.specialTy = TyTwo3220;
+				specialTy_ = TyTwo3220;
 			}
 			else if (info.c3 == 4) {
 				//四套三条(四套冲三)
-				hand.specialTy = TyFour30;
+				specialTy_ = TyFour30;
 			}
 			else if (info.c2 == 5 && info.c3 == 1) {
 				//五对三条(五对冲三)
-				hand.specialTy = TyFive2030;
+				specialTy_ = TyFive2030;
 			}
 			else if (info.c2 == 6) {
 				//六对半
-				hand.specialTy = TySix20;
+				specialTy_ = TySix20;
 			}
 		}
-		return c;
 	}
 
 	//初始化牌墩

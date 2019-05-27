@@ -288,12 +288,22 @@ namespace S13S {
 			void PrintCursorEnumCards(DunTy dt);
 			//返回特殊牌型字符串
 			std::string StringSpecialTy();
+		private:
+			//确定手牌牌型
+			void CalcHandCardsType(uint8_t const* src, int len, classify_t& info);
 		public:
-			int chairID;		//玩家座椅ID
-			HandTy specialTy;	//特殊牌型
-			//EnumList *dun;		//尾墩[2]5张/中墩[1]5张/头墩[0]3张
-			//根节点：初始枚举项列表
+			//玩家座椅ID
+			int chairID;
+			//特殊牌型
+			HandTy specialTy_;
+			//根节点：初始枚举牌型项列表
 			EnumList *rootEnumList;
+			//枚举几组最优墩(头墩&中墩&尾墩加起来为一组)，叶子节点向上往根节点遍历
+			//叶子节点dt_成员判断当前是从哪墩开始，
+			//dt_ == DunFirst  时，叶子节点(头墩)/父节点(中墩)/根节点(尾墩)
+			//dt_ == DunSecond 时，叶子节点(中墩)/父节点 = 根节点(尾墩)
+			//dt_ == DunLast   时，叶子节点 = 根节点(尾墩)
+			std::vector<EnumList::TraverseTreeNode> dunList;
 		};
 	public:
 		//玩家手牌类型
