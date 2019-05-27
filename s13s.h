@@ -178,8 +178,12 @@ namespace S13S {
 	public:
 		//生成n张牌<-"♦A ♦3 ♥3 ♥4 ♦5 ♣5 ♥5 ♥6 ♣7 ♥7 ♣9 ♣10 ♣J"
 		static int MakeCardList(string const& strcards, uint8_t *cards, int size);
+	private:
+		int8_t index_;
+		uint8_t cardsData_[MaxCardTotal];
 	public:
-		//EnumList 枚举一墩牌型的所有可能，多叉树结构 /////////////
+		//////////////////////////////////////////////////////////////
+		//EnumList 枚举一墩牌型的所有可能，多叉树结构
 		class EnumList {
 		public:
 			//枚举牌，枚举一墩牌，5/3张
@@ -188,9 +192,13 @@ namespace S13S {
 			typedef std::pair<HandTy, EnumCards const*> EnumItem;
 			//树结构，pair<枚举项，子枚举项列表>
 			typedef std::pair<EnumItem, EnumList*>  TreeEnumItem;
+			//树节点，pair<树节点指针，对应树枚举项>
+			typedef std::pair<EnumList*, int>   TraverseTreeNode;
 		public:
 			EnumList() {
 				Reset();
+				parent_ = NULL;
+				parentcursor_ = -1;
 			}
 			~EnumList() {
 				Reset();
@@ -235,10 +243,19 @@ namespace S13S {
 			DunTy dt_;
 			//遍历游标
 			int c, cursor_;
+			//父亲节点
+			EnumList* parent_;
+			//对应父节点游标位置
+			int parentcursor_;
 			//pair<枚举项牌型，对应余牌枚举子项列表>，多叉树结构
 			std::pair<EnumItem, EnumList*> tree[MaxEnumSZ];
 		};
-		//classify_t 分类牌型 /////////////
+	private:
+		//根节点：初始枚举项列表
+		EnumList *rootEnumList;
+	public:
+		//////////////////////////////////////////////////////////////
+		//classify_t 分类牌型
 		struct classify_t {
 			int c4, c3, c2;
 			//所有重复四张牌型
@@ -254,7 +271,8 @@ namespace S13S {
 			uint8_t cpy[MaxSZ];
 			int cpylen;
 		};
-		//handinfo_t 一副手牌信息 /////////////
+		//////////////////////////////////////////////////////////////
+		//handinfo_t 一副手牌信息
 		class handinfo_t {
 		public:
 			handinfo_t() {
@@ -548,9 +566,6 @@ namespace S13S {
 		static HandTy CheckAllBig(uint8_t const* src, int len);
 		//全小：全是2至8的牌型
 		static HandTy CheckAllSmall(uint8_t const* src, int len);
-	private:
-		int8_t index_;
-		uint8_t cardsData_[MaxCardTotal];
 	};
 };
 
