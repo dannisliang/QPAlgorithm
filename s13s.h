@@ -207,7 +207,7 @@ namespace S13S {
 			void Init(DunTy dt);
 			void Reset();
 			//打印指定枚举牌型
-			void PrintEnumCards(HandTy ty);
+			void PrintEnumCards(HandTy ty = TyAllBase);
 			//打印指定枚举牌型
 			void PrintEnumCards(std::string const& name, HandTy ty, std::vector<std::vector<uint8_t>> const& src);
 			//打印游标处枚举牌型
@@ -269,26 +269,62 @@ namespace S13S {
 			int cpylen;
 		};
 		//////////////////////////////////////////////////////////////
+		//groupdun_t 一组墩(头墩&中墩&尾墩)
+		class groupdun_t {
+		public:
+			groupdun_t() :specialTy(TyNil), ty_({ TyNil }) {
+				memset(dun, 0, sizeof(uint8_t)*DunMax * 5);
+			}
+			groupdun_t(groupdun_t const& ref) {
+				copy(ref);
+			}
+			groupdun_t& operator=(groupdun_t const& ref) {
+				return copy(ref);
+			}
+			groupdun_t& copy(groupdun_t const& ref) {
+				specialTy = ref.specialTy;
+				memcpy(ty_, ref.ty_, sizeof(HandTy)*DunMax);
+				memcpy(dun, ref.dun, sizeof(uint8_t)*DunMax * 5);
+				return *this;
+			}
+			void assign(DunTy dt, HandTy ty, uint8_t const* src, int len) {
+				ty_[(int)(dt)] = ty;
+				memcpy(&(dun[dt])[0], src, len);
+			}
+			//打印指定墩牌型
+			void PrintCardList(DunTy dt);
+			//打印指定墩牌型
+			void PrintCardList(std::string const& name, DunTy dt, HandTy ty);
+		public:
+			//标记对应特殊牌型
+			HandTy specialTy;
+			//各墩对应普通牌型
+			HandTy ty_[DunMax];
+			//[0]头敦(3)/[1]中墩(5)/[2]尾墩(5)
+			uint8_t dun[DunMax][5];
+		};
+		//////////////////////////////////////////////////////////////
 		//handinfo_t 一副手牌信息
 		class handinfo_t {
+			friend class CGameLogic;
 		public:
-			handinfo_t() {
+			handinfo_t() :rootEnumList(NULL), specialTy_(TyNil), chairID(-1), current(0) {
 				//必须用成员结构体指针形式来new结构体成员对象，否则类成员变量数据会错乱，
 				//只要类成员结构体嵌入vector/string这些STL对象会出问题，编译器bug???
-				rootEnumList = new EnumList();
+				//rootEnumList = new EnumList();
 				Reset();
 			}
 			~handinfo_t() {
-				delete rootEnumList;
+				//delete rootEnumList;
 			}
 			void Reset();
-			//打印指定枚举牌型
-			void PrintEnumCards(DunTy dt, HandTy ty = TyAllBase);
-			//打印游标处枚举牌型
-			void PrintCursorEnumCards(DunTy dt);
+			//打印全部枚举墩牌型
+			void PrintEnumCards();
 			//返回特殊牌型字符串
 			std::string StringSpecialTy();
-		private:
+			//返回特殊牌型字符串
+			static std::string StringSpecialTy(HandTy specialTy);
+		protected:
 			//确定手牌牌型
 			void CalcHandCardsType(uint8_t const* src, int len, classify_t& info);
 		public:
@@ -298,6 +334,10 @@ namespace S13S {
 			HandTy specialTy_;
 			//根节点：初始枚举牌型项列表
 			EnumList *rootEnumList;
+			//当前选择groups中的第几组优先
+			int current;
+			//枚举几组最优墩，指向EnumList::TraverseTreeNode成员
+			std::vector<groupdun_t> groups;
 			//枚举几组最优墩(头墩&中墩&尾墩加起来为一组)，叶子节点向上往根节点遍历
 			//叶子节点dt_成员判断当前是从哪墩开始，
 			//dt_ == DunFirst  时，叶子节点(头墩)/父节点(中墩)/根节点(尾墩)
