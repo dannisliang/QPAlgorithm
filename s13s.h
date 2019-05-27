@@ -338,12 +338,12 @@ namespace S13S {
 			int current;
 			//枚举几组最优墩，指向EnumList::TraverseTreeNode成员
 			std::vector<groupdun_t> groups;
-			//枚举几组最优墩(头墩&中墩&尾墩加起来为一组)，叶子节点向上往根节点遍历
-			//叶子节点dt_成员判断当前是从哪墩开始，
-			//dt_ == DunFirst  时，叶子节点(头墩)/父节点(中墩)/根节点(尾墩)
-			//dt_ == DunSecond 时，叶子节点(中墩)/父节点 = 根节点(尾墩)
-			//dt_ == DunLast   时，叶子节点 = 根节点(尾墩)
-			std::vector<EnumList::TraverseTreeNode> dunList;
+			//枚举几组最优墩(头墩&中墩&尾墩加起来为一组)，由叶子节点向上往根节点遍历
+			//叶子节点 dt_ 成员判断当前是从哪墩节点开始，
+			//叶子节点 dt_ == DunFirst  时，叶子节点(头墩)/父节点(中墩)/根节点(尾墩)
+			//叶子节点 dt_ == DunSecond 时，叶子节点(中墩)/父节点 = 根节点(尾墩)
+			//叶子节点 dt_ == DunLast   时，叶子节点 = 根节点(尾墩)
+			std::vector<EnumList::TraverseTreeNode> leafList;
 		};
 	public:
 		//玩家手牌类型
