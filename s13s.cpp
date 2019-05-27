@@ -2755,7 +2755,7 @@ namespace S13S {
 	
 	static std::string CNStringTy(char const* name, char const* ty) {
 		char ch[50] = { 0 };
-		sprintf(ch,"%s[%s]", name, ty);
+		sprintf(ch, "%s[%s]", name, ty);
 		return ch;
 	}
 	
