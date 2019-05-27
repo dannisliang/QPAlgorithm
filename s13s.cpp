@@ -2066,24 +2066,34 @@ namespace S13S {
 		ClassifyCards(src, len, n, psrc, dst4, c4, dst3, c3, dst2, c2, cpy, cpylen, v123sc, v123, vsc);
 		//psrc组与组之间按牌值升序排列(从小到大)
 		SortCards_src(psrc, c4 + c3 + c2, true, true);
-		//所有葫芦(一组三条加上一组对子)
-		v32.clear();
-		EnumCards32(psrc, dst4, c4, dst3, c3, dst2, c2, v32);
-		//所有三条(三张值相同的牌)
-		v30.clear();
-		EnumCards30(psrc, dst4, c4, dst3, c3, dst2, c2, v30);
-		//所有两对(两个对子加上一张单牌)
-		v22.clear();
-		EnumCards22(psrc, dst4, c4, dst3, c3, dst2, c2, v22);
-		//所有对子(一对)
-		v20.clear();
-		EnumCards20(psrc, dst4, c4, dst3, c3, dst2, c2, v20);
-		//所有铁支(四张值相同的牌)
-		v40.clear();
-		for (int i = 0; i < c4; ++i) {
-			//std::vector<uint8_t> v(&(*&dst4[i])[0], &(*&dst4[i])[0] + 4);
-			std::vector<uint8_t> v(&(dst4[i])[0], &(dst4[i])[0] + 4);
-			v40.push_back(v);
+		if (n >= 5) {
+			//所有葫芦(一组三条加上一组对子)
+			v32.clear();
+			EnumCards32(psrc, dst4, c4, dst3, c3, dst2, c2, v32);
+		}
+		if (n >= 3) {
+			//所有三条(三张值相同的牌)
+			v30.clear();
+			EnumCards30(psrc, dst4, c4, dst3, c3, dst2, c2, v30);
+		}
+		if (n >= 4) {
+			//所有两对(两个对子加上一张单牌)
+			v22.clear();
+			EnumCards22(psrc, dst4, c4, dst3, c3, dst2, c2, v22);
+		}
+		if (n >= 2) {
+			//所有对子(一对)
+			v20.clear();
+			EnumCards20(psrc, dst4, c4, dst3, c3, dst2, c2, v20);
+		}
+		if (n >= 4) {
+			//所有铁支(四张值相同的牌)
+			v40.clear();
+			for (int i = 0; i < c4; ++i) {
+				//std::vector<uint8_t> v(&(*&dst4[i])[0], &(*&dst4[i])[0] + 4);
+				std::vector<uint8_t> v(&(dst4[i])[0], &(dst4[i])[0] + 4);
+				v40.push_back(v);
+			}
 		}
 	}
 
@@ -2434,6 +2444,7 @@ namespace S13S {
 					EnumList::EnumItem& leafItem = treeItem.first;
 					tyLeaf = leafItem.first;
 					leaf = leafItem.second;
+					assert(leaf->size() <= 3);
 					group.assign(DunFirst, tyLeaf, &leaf->front(), leaf->size());
 				}
 				//中墩
