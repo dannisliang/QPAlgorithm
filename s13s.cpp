@@ -2381,8 +2381,8 @@ namespace S13S {
 		specialTy_ = CheckDragonRoyal(src, len);
 
 		//遍历枚举出来的每组牌型(头墩&中墩&尾墩加起来为一组) ////////////////////////////
-		for (std::vector<EnumList::TraverseTreeNode>::iterator it = dunList.begin();
-			it != dunList.end(); ++it) {
+		for (std::vector<EnumList::TraverseTreeNode>::iterator it = leafList.begin();
+			it != leafList.end(); ++it) {
 			//从叶子节点往根节点遍历 ////////////////////////////
 			EnumList::TraverseTreeNode& leafTraverseNode = *it;
 			EnumList*& nodeLeaf = leafTraverseNode.first;//
@@ -2727,7 +2727,7 @@ namespace S13S {
 		specialTy_ = TyNil;
 		current = 0;
 		groups.clear();
-		dunList.clear();
+		leafList.clear();
 		if (rootEnumList != NULL) {
 			delete rootEnumList;
 			rootEnumList = NULL;
