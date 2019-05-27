@@ -250,9 +250,6 @@ namespace S13S {
 			//pair<枚举项牌型，对应余牌枚举子项列表>，多叉树结构
 			std::pair<EnumItem, EnumList*> tree[MaxEnumSZ];
 		};
-	private:
-		//根节点：初始枚举项列表
-		EnumList *rootEnumList;
 	public:
 		//////////////////////////////////////////////////////////////
 		//classify_t 分类牌型
@@ -278,11 +275,11 @@ namespace S13S {
 			handinfo_t() {
 				//必须用成员结构体指针形式来new结构体成员对象，否则类成员变量数据会错乱，
 				//只要类成员结构体嵌入vector/string这些STL对象会出问题，编译器bug???
-				dun = new EnumList[DunMax];
+				rootEnumList = new EnumList();
 				Reset();
 			}
 			~handinfo_t() {
-				delete[] dun;
+				delete rootEnumList;
 			}
 			void Reset();
 			//打印指定枚举牌型
@@ -294,7 +291,9 @@ namespace S13S {
 		public:
 			int chairID;		//玩家座椅ID
 			HandTy specialTy;	//特殊牌型
-			EnumList *dun;		//尾墩[2]5张/中墩[1]5张/头墩[0]3张
+			//EnumList *dun;		//尾墩[2]5张/中墩[1]5张/头墩[0]3张
+			//根节点：初始枚举项列表
+			EnumList *rootEnumList;
 		};
 	public:
 		//玩家手牌类型

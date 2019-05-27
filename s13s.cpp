@@ -2240,7 +2240,7 @@ namespace S13S {
 		hand.Reset();
 		
 		//根节点：初始枚举项列表
-		rootEnumList = new EnumList();
+		EnumList *& rootEnumList = hand.rootEnumList;
 
 		int c = 0;
 		classify_t info = { 0 };
@@ -2342,26 +2342,6 @@ namespace S13S {
 						break;
 					}
 					
-					//如果不是至尊青龙/一条龙(十三水)/十二皇族
-					if (hand.specialTy == TyNil || hand.specialTy == TyThreesc || hand.specialTy == TyThree123) {
-						if (tyRoot == Ty123sc && tyChild == Ty123sc && tyLeaf == Ty123sc) {
-							//三同花顺
-							hand.specialTy = TyThree123sc;
-						}
-						else if (tyRoot == Ty123 && tyChild == Ty123 && tyLeaf == Ty123) {
-							if (hand.specialTy != TyThree123sc) {
-								//三顺子
-								hand.specialTy = TyThree123;
-							}
-						}
-						else if (tyRoot == Tysc && tyChild == Tysc && tyLeaf == Tysc) {
-							if (hand.specialTy == TyNil) {
-								//三同花
-								hand.specialTy = TyThreesc;
-							}
-						}
-					}
-					
 					//printf("\n取头墩 = [%s] ", StringCardType(tyLeaf).c_str());
 					//PrintCardList(&leaf->front(), leaf->size());
 					leafEnumList->PrintCursorEnumCards();
@@ -2378,6 +2358,75 @@ namespace S13S {
 					if (++c >= n) {
 						goto end;
 					}
+				}
+			}
+		}
+		//遍历枚举出来的每组牌型(头墩&中墩&尾墩加起来为一组) ////////////////////////////
+		for (std::vector<EnumList::TraverseTreeNode>::iterator it = dunList.begin();
+			it != dunList.end(); ++it) {
+			//从叶子节点往根节点遍历 ////////////////////////////
+			EnumList::TraverseTreeNode& leafTraverseNode = *it;
+			EnumList*& nodeLeaf = leafTraverseNode.first;//
+			cursorLeaf = leafTraverseNode.second;//
+			switch (nodeLeaf->dt_)
+			{
+			case DunLast: {
+				
+				break;
+			}
+			case DunSecond: {
+				break;
+			}
+			case DunFirst: {
+				//头敦
+				{
+					EnumList::TreeEnumItem& treeItem = nodeLeaf->tree[cursorLeaf];
+					EnumList::EnumItem& leafItem = treeItem.first;
+					tyLeaf = leafItem.first;
+					leaf = leafItem.second;
+				}
+				//中墩
+				EnumList *nodeChild = nodeLeaf->parent_;//
+				cursorChild = nodeLeaf->parentcursor_;//
+				{
+					assert(nodeChild != NULL);
+					EnumList::TreeEnumItem& treeItem = nodeChild->tree[cursorChild];
+					EnumList::EnumItem& childItem = treeItem.first;
+					tyChild = childItem.first;
+					child = childItem.second;
+				}
+				//尾墩
+				EnumList *nodeRoot = nodeChild->parent_;//
+				cursorRoot = nodeChild->parentcursor_;//
+				{
+					assert(nodeRoot != NULL);
+					EnumList::TreeEnumItem& treeItem = nodeRoot->tree[cursorRoot];
+					EnumList::EnumItem& rootItem = treeItem.first;
+					tyRoot = rootItem.first;
+					root = rootItem.second;
+				}
+				//如果不是至尊青龙/一条龙(十三水)/十二皇族
+				if (hand.specialTy != TyZZQDragon && hand.specialTy != TyOneDragon && hand.specialTy != Ty12Royal) {
+					if (tyRoot == Ty123sc && tyChild == Ty123sc && tyLeaf == Ty123sc) {
+						//三同花顺
+						hand.specialTy = TyThree123sc;
+					}
+					else if (tyRoot == Ty123 && tyChild == Ty123 && tyLeaf == Ty123) {
+						//如果不是同花顺
+						if (hand.specialTy != TyThree123sc) {
+							//三顺子
+							hand.specialTy = TyThree123;
+						}
+					}
+					else if (tyRoot == Tysc && tyChild == Tysc && tyLeaf == Tysc) {
+						//如果不是同花顺且不是三顺子
+						if (hand.specialTy != TyThree123sc && hand.specialTy != TyThree123) {
+							//三同花
+							hand.specialTy = TyThreesc;
+						}
+					}
+				}
+				break;
 				}
 			}
 		}
@@ -2602,12 +2651,12 @@ namespace S13S {
 	
 	//打印指定枚举牌型
 	void CGameLogic::handinfo_t::PrintEnumCards(DunTy dt, HandTy ty) {
-		dun[dt].PrintEnumCards(ty);
+		//dun[dt].PrintEnumCards(ty);
 	}
 
 	//打印游标处枚举牌型
 	void CGameLogic::handinfo_t::PrintCursorEnumCards(DunTy dt) {
-		dun[dt].PrintCursorEnumCards();
+		//dun[dt].PrintCursorEnumCards();
 	}
 	
 	static std::string CNStringTy(char const* name, char const* ty) {
@@ -2725,7 +2774,7 @@ namespace S13S {
 		if (hand.specialTy != TyNil) {
 			return hand.specialTy;
 		}
-		EnumList& dun = hand.dun[dt];
+		//EnumList& dun = hand.dun[dt];
 
 	}
 
