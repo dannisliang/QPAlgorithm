@@ -2240,7 +2240,7 @@ namespace S13S {
 		hand.Reset();
 
 		//枚举几组最优墩(头墩&中墩&尾墩加起来为一组)
-		std::vector<EnumList::TraverseTreeNode>& dunList = hand.dunList;
+		std::vector<EnumList::TraverseTreeNode>& leafList = hand.leafList;
 		//根节点：初始枚举牌型项列表
 		EnumList *& rootEnumList = hand.rootEnumList;
 		if (rootEnumList == NULL) {
@@ -2294,8 +2294,8 @@ namespace S13S {
 					
 					std::map<int64_t, bool>::iterator it = masks.find(maskRoot);
 					if (it == masks.end()) {
-						//作为一墩数据
-						dunList.push_back(EnumList::TraverseTreeNode(rootEnumList, cursorRoot));
+						//根节点为叶子节点，记录尾墩
+						leafList.push_back(EnumList::TraverseTreeNode(rootEnumList, cursorRoot));
 						if (++c >= n) {
 							goto end;
 						}
@@ -2336,8 +2336,8 @@ namespace S13S {
 						
 						std::map<int64_t, bool>::iterator it = masks.find(maskChild);
 						if (it == masks.end()) {
-							//作为一墩数据
-							dunList.push_back(EnumList::TraverseTreeNode(childEnumList, cursorChild));
+							//子节点为叶子节点，记录中墩和尾墩
+							leafList.push_back(EnumList::TraverseTreeNode(childEnumList, cursorChild));
 							if (++c >= n) {
 								goto end;
 							}
@@ -2356,8 +2356,8 @@ namespace S13S {
 					//rootEnumList->PrintCursorEnumCards();
 					//printf("--- *** --------------------------------------------------\n");
 					
-					//作为一墩数据
-					dunList.push_back(EnumList::TraverseTreeNode(leafEnumList, cursorLeaf));
+					//叶子节点作为叶子节点，记录头墩，中墩和尾墩
+					leafList.push_back(EnumList::TraverseTreeNode(leafEnumList, cursorLeaf));
 
 					if (++c >= n) {
 						goto end;
