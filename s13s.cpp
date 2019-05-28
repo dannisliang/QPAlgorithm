@@ -2821,12 +2821,12 @@ namespace S13S {
 		//uint8_t cpy[MaxSZ] = { 0 };
 		//int cpylen = 0;
 		//memset(&info, 0, sizeof(classify_t));
-		dun.Reset();
+		enumList.Reset();
 		//枚举墩牌型
 		EnumCards(src, len, n, info.dst4, info.c4, info.dst3, info.c3, info.dst2, info.c2, info.cpy, info.cpylen,
-			dun.v123sc, dun.v123, dun.vsc, dun.v40, dun.v32, dun.v30, dun.v22, dun.v20);
+			enumList.v123sc, enumList.v123, enumList.vsc, enumList.v40, enumList.v32, enumList.v30, enumList.v22, enumList.v20);
 		//初始化牌墩
-		dun.Init(dt);
+		enumList.Init(dt);
 	}
 	
 	//枚举牌型测试
