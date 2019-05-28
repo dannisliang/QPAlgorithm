@@ -2247,6 +2247,10 @@ namespace S13S {
 		HandTy tyLeaf = TyNil, tyChild = TyNil, tyRoot = TyNil;
 		EnumList::EnumCards const *leaf = NULL, *child = NULL, *root = NULL;
 		
+		//防止重复添加
+		std::map<int64_t, bool> masks;
+		int64_t maskRoot = 0, maskChild = 0;
+
 		hand.Init();
 		//叶子节点列表
 		//枚举几组最优墩(头墩&中墩&尾墩加起来为一组)，由叶子节点向上往根节点遍历
@@ -2259,11 +2263,6 @@ namespace S13S {
 		classify_t info = { 0 };
 		//枚举尾墩/5张 //////
 		EnumCards(src, len, 5, info, *rootEnumList, DunLast);
-		
-		//防止重复添加
-		std::map<int64_t, bool> masks;
-		int64_t maskRoot = cursorRoot & 0xFFFFFFFF;
-		int64_t maskChild = ((cursorChild & 0xFFFFFFFF) << 32) | (cursorRoot & 0xFFFFFFFF);
 	end:
 		while (c < n) {
 			//返回一个枚举牌型及对应的余牌
@@ -2288,11 +2287,13 @@ namespace S13S {
 			//指向父节点/对应父节点游标位置
 			childEnumList->parent_ = rootEnumList;
 			childEnumList->parentcursor_ = cursorRoot;
+			
+			//计算根节点游标掩码
+			maskRoot = cursorRoot & 0xFFFFFFFF;
 
 			classify_t info = { 0 };
 			//从余牌中枚举中墩/5张 //////
 			EnumCards(psrc, lensrc, 5, info, *childEnumList, DunSecond);
-
 			while (c < n) {
 				//返回一个枚举牌型及对应的余牌
 				//按同花顺/铁支/葫芦/同花/顺子/三条/两对/对子/散牌的顺序
@@ -2314,6 +2315,7 @@ namespace S13S {
 					break;
 				}
 				masks[maskRoot] = true;
+				
 				//printf("\n取中墩 = [%s] ", StringCardType(tyChild).c_str());
 				//PrintCardList(&child->front(), child->size());
 				//childEnumList->PrintCursorEnumCards();
@@ -2329,11 +2331,13 @@ namespace S13S {
 				//指向父节点/对应父节点游标位置
 				leafEnumList->parent_ = childEnumList;
 				leafEnumList->parentcursor_ = cursorChild;
-
+				
+				//计算子节点游标掩码
+				maskChild = ((cursorChild & 0xFFFFFFFF) << 32) | (cursorRoot & 0xFFFFFFFF);
+				
 				classify_t info = { 0 };
 				//从余牌中枚举头墩/3张 //////
 				EnumCards(psrc2, lensrc2, 3, info, *leafEnumList, DunFirst);
-
 				while (c < n) {
 					//返回一个枚举牌型及对应的余牌
 					//按同花顺/铁支/葫芦/同花/顺子/三条/两对/对子/散牌的顺序
