@@ -353,7 +353,7 @@ namespace S13S {
 			int chairID;
 			//特殊牌型
 			HandTy specialTy_;
-			//根节点：初始枚举牌型项列表
+			//根节点：初始枚举所有牌型列表
 			EnumList *rootEnumList;
 			//当前选择groups中的第几组优先
 			int current;
