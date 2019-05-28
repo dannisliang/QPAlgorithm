@@ -1854,7 +1854,7 @@ namespace S13S {
 				std::vector<std::vector<uint8_t>> v0;
 				int c_0 = FuncC(c0, 3, psrc, (*it)[0], v0);
 				//printf("\n--- C(%d,3)=%d\n", c0, c_0);
-				//////从v0中任取一项组合葫芦牌型C(v0.size(),1) //////
+				//////从v0中任取一项组合三条牌型C(v0.size(),1) //////
 				for (std::vector<std::vector<uint8_t>>::iterator it3 = v0.begin();
 					it3 != v0.end(); ++it3) {//三张
 #if 0
@@ -1925,7 +1925,7 @@ namespace S13S {
 			int c_0 = FuncC(c0, 2, psrc, (*it)[0], v0);
 			int c_1 = FuncC(c1, 2, psrc, (*it)[1], v1);
 			//printf("\n--- C(%d,2)=%d，C(%d,2)=%d\n", c0, c_0, c1, c_1);
-			//////从v1,v0中分别任取一项组合葫芦牌型C(v0.size(),1)*C(v1.size(),1) //////
+			//////从v1,v0中分别任取一项组合两对子牌型C(v0.size(),1)*C(v1.size(),1) //////
 			for (std::vector<std::vector<uint8_t>>::iterator it2 = v1.begin();
 				it2 != v1.end(); ++it2) {//对子
 				for (std::vector<std::vector<uint8_t>>::iterator it3 = v0.begin();
@@ -2001,7 +2001,7 @@ namespace S13S {
 			std::vector<std::vector<uint8_t>> v0;
 			int c_0 = FuncC(c0, 2, psrc, (*it)[0], v0);
 			//printf("\n--- C(%d,2)=%d\n", c0, c_0);
-			//////从v0中任取一项组合葫芦牌型C(v0.size(),1) //////
+			//////从v0中任取一项组合对子牌型C(v0.size(),1) //////
 			for (std::vector<std::vector<uint8_t>>::iterator it3 = v0.begin();
 				it3 != v0.end(); ++it3) {//二张
 #if 0
