@@ -2248,8 +2248,8 @@ namespace S13S {
 		EnumList::EnumCards const *leaf = NULL, *child = NULL, *root = NULL;
 		
 		hand.Reset();
-
-		//枚举几组最优墩(头墩&中墩&尾墩加起来为一组)
+		//叶子节点列表
+		//枚举几组最优墩(头墩&中墩&尾墩加起来为一组)，由叶子节点向上往根节点遍历
 		std::vector<EnumList::TraverseTreeNode>& leafList = hand.leafList;
 		//根节点：初始枚举牌型项列表
 		EnumList *& rootEnumList = hand.rootEnumList;
