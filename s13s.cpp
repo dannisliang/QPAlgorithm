@@ -2236,7 +2236,7 @@ namespace S13S {
 	//hand handinfo_t& 保存手牌信息
 	int CGameLogic::AnalyseHandCards(uint8_t const* src, int len, int n, handinfo_t& hand) {
 		int c = 0;
-		uint8_t cpy[MaxSZ] = {0}, cpy2[MaxSZ] = { 0 }, cpy3[MaxSZ] = { 0 };
+		uint8_t cpy[MaxSZ] = { 0 }, cpy2[MaxSZ] = { 0 }, cpy3[MaxSZ] = { 0 };
 		int cpylen = 0, cpylen2 = 0, cpylen3 = 0;
 
 		uint8_t const* psrc = NULL, *psrc2 = NULL;
@@ -2247,18 +2247,19 @@ namespace S13S {
 		HandTy tyLeaf = TyNil, tyChild = TyNil, tyRoot = TyNil;
 		EnumList::EnumCards const *leaf = NULL, *child = NULL, *root = NULL;
 		
-		hand.Reset();
+		hand.Init();
 		//叶子节点列表
 		//枚举几组最优墩(头墩&中墩&尾墩加起来为一组)，由叶子节点向上往根节点遍历
 		std::vector<EnumList::TraverseTreeNode>& leafList = hand.leafList;
 		//根节点：初始枚举牌型项列表
 		EnumList *& rootEnumList = hand.rootEnumList;
-		if (rootEnumList == NULL) {
-			rootEnumList = new EnumList();
-		}
+		assert(rootEnumList != NULL);
+		hand.Reset();
+		
 		classify_t info = { 0 };
 		//枚举尾墩/5张 //////
 		EnumCards(src, len, 5, info, *rootEnumList, DunLast);
+		
 		//防止重复添加
 		std::map<int64_t, bool> masks;
 		int64_t maskRoot = cursorRoot & 0xFFFFFFFF;
@@ -2346,7 +2347,7 @@ namespace S13S {
 						
 						std::map<int64_t, bool>::iterator it = masks.find(maskChild);
 						if (it == masks.end()) {
-							//子节点为叶子节点，记录中墩和尾墩
+							//子节点为叶子节点，记录中墩和尾墩，由叶子节点向上查找根节点
 							leafList.push_back(EnumList::TraverseTreeNode(childEnumList, cursorChild));
 							if (++c >= n) {
 								goto end;
@@ -2366,7 +2367,7 @@ namespace S13S {
 					//rootEnumList->PrintCursorEnumCards();
 					//printf("--- *** --------------------------------------------------\n");
 					
-					//叶子节点作为叶子节点，记录头墩，中墩和尾墩
+					//叶子节点作为叶子节点，记录头墩，中墩和尾墩，由叶子节点向上查找父节点和根节点
 					leafList.push_back(EnumList::TraverseTreeNode(leafEnumList, cursorLeaf));
 
 					if (++c >= n) {
@@ -2612,7 +2613,62 @@ namespace S13S {
 		c = 0;
 		cursor_ = -1;
 	}
-	
+
+	//重置游标
+	void CGameLogic::EnumList::ResetCursor() {
+		cursor_ = -1;
+	}
+
+	//返回下一个游标
+	bool CGameLogic::EnumList::GetNextCursor(int& cursor) {
+		if (++cursor_ < c) {
+			cursor = cursor_;
+			return true;
+		}
+		return false;
+	}
+
+	//释放new内存
+	void CGameLogic::EnumList::Release() {
+		
+		//子节点/根节点游标
+		int cursorChild = 0, cursorRoot = 0;
+		EnumList* const& rootEnumList = this;
+		
+		rootEnumList->ResetCursor();
+		while (true) {
+			//返回下一个游标
+			if (!rootEnumList->GetNextCursor(cursorRoot)) {
+				break;
+			}
+			//子节点
+			EnumList*& childEnumList = rootEnumList->GetCursorChildItem(cursorRoot);
+			if (!childEnumList) {
+				break;
+			}
+			childEnumList->ResetCursor();
+			while (true) {
+				//返回下一个游标
+				if (!childEnumList->GetNextCursor(cursorChild)) {
+					break;
+				}
+
+				//叶子节点
+				EnumList*& leafEnumList = childEnumList->GetCursorChildItem(cursorChild);
+				if (!leafEnumList) {
+					break;
+				}
+				delete leafEnumList;//删除叶子节点
+				leafEnumList = NULL;
+				//printf("--- *** 删除叶子节点\n");
+			}
+			//删除子节点
+			delete childEnumList;
+			childEnumList = NULL;
+			//printf("--- *** 删除子节点\n");
+		}
+	}
+
 	//打印枚举牌型
 	void CGameLogic::EnumList::PrintEnumCards(HandTy ty) {
 		switch (ty)
@@ -2734,15 +2790,23 @@ namespace S13S {
 		CGameLogic::PrintCardList(&(dun[dt])[0], 5, true);
 	}
 
+	//初始化
+	void CGameLogic::handinfo_t::Init() {
+		if (rootEnumList == NULL) {
+			//必须用成员结构体指针形式来new结构体成员对象，否则类成员变量数据会错乱，
+			//只要类成员结构体嵌入vector/string这些STL对象会出问题，编译器bug???
+			rootEnumList = new EnumList();
+		}
+	}
+	
 	void CGameLogic::handinfo_t::Reset() {
 		chairID = -1;
 		specialTy_ = TyNil;
 		current = 0;
 		groups.clear();
 		leafList.clear();
-		if (rootEnumList != NULL) {
-			delete rootEnumList;
-			rootEnumList = NULL;
+		if (rootEnumList) {
+			rootEnumList->Release();
 		}
 	}
 	
@@ -2802,9 +2866,9 @@ namespace S13S {
 	//src uint8_t const* 手牌余牌(13/8/3)，初始13张，按5/5/3依次抽，余牌依次为13/8/3
 	//n int 抽取n张(5/5/3) 第一次抽5张余8张，第二次抽5张余3张，第三次取余下3张抽完
 	//info classify_t& 存放分类信息(所有重复四张/三张/二张/散牌/余牌)
-	//dun EnumList& 存放指定墩数据 dt DunTy 指定为第几墩
+	//enumList EnumList& 存放枚举墩牌型列表数据 dt DunTy 指定为第几墩
 	void CGameLogic::EnumCards(uint8_t const* src, int len,
-		int n, classify_t& info, EnumList& dun, DunTy dt) {
+		int n, classify_t& info, EnumList& enumList, DunTy dt) {
 		printf("\n\n--- *** EnumCards(%d, %d) from ", len, n);
 		PrintCardList(src, len);
 		//int c4 = 0, c3 = 0, c2 = 0;

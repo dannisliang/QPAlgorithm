@@ -207,6 +207,12 @@ namespace S13S {
 			//初始化牌墩
 			void Init(DunTy dt);
 			void Reset();
+			//释放new内存
+			void Release();
+			//重置游标
+			void ResetCursor();
+			//返回下一个游标
+			bool GetNextCursor(int& cursor);
 			//打印指定枚举牌型
 			void PrintEnumCards(HandTy ty = TyAllBase);
 			//打印指定枚举牌型
@@ -322,14 +328,16 @@ namespace S13S {
 			friend class CGameLogic;
 		public:
 			handinfo_t() :rootEnumList(NULL), specialTy_(TyNil), chairID(-1), current(0) {
-				//必须用成员结构体指针形式来new结构体成员对象，否则类成员变量数据会错乱，
-				//只要类成员结构体嵌入vector/string这些STL对象会出问题，编译器bug???
-				//rootEnumList = new EnumList();
 				Reset();
 			}
 			~handinfo_t() {
-				//delete rootEnumList;
+				if (rootEnumList) {
+					rootEnumList->Release();
+					delete rootEnumList;
+				}
 			}
+			//初始化
+			void Init();
 			void Reset();
 			//打印全部枚举墩牌型
 			void PrintEnumCards();
