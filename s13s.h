@@ -284,6 +284,7 @@ namespace S13S {
 				return copy(ref);
 			}
 			groupdun_t& copy(groupdun_t const& ref) {
+				start = ref.start;
 				specialTy = ref.specialTy;
 				memcpy(ty_, ref.ty_, sizeof(HandTy)*DunMax);
 				memcpy(dun, ref.dun, sizeof(uint8_t)*DunMax * 5);
