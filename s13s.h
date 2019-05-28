@@ -102,6 +102,7 @@ namespace S13S {
 
 	//前/中/尾墩
 	enum DunTy {
+		DunNil = -1,
 		DunFirst = 0,
 		DunSecond,
 		DunLast,
@@ -240,6 +241,7 @@ namespace S13S {
 			//所有对子(一对)
 			std::vector<EnumDunCards> v20;
 		public:
+			//标识头/中/尾墩
 			DunTy dt_;
 			//遍历游标
 			int c, cursor_;
@@ -272,7 +274,7 @@ namespace S13S {
 		//groupdun_t 一组墩(头墩&中墩&尾墩)
 		class groupdun_t {
 		public:
-			groupdun_t() :specialTy(TyNil), ty_({ TyNil }) {
+			groupdun_t() :specialTy(TyNil), ty_({ TyNil }), c({ 0 }), start(DunNil) {
 				memset(dun, 0, sizeof(uint8_t)*DunMax * 5);
 			}
 			groupdun_t(groupdun_t const& ref) {
@@ -285,21 +287,31 @@ namespace S13S {
 				specialTy = ref.specialTy;
 				memcpy(ty_, ref.ty_, sizeof(HandTy)*DunMax);
 				memcpy(dun, ref.dun, sizeof(uint8_t)*DunMax * 5);
+				memcpy(c, ref.c, sizeof(uint8_t)*DunMax);
 				return *this;
 			}
 			void assign(DunTy dt, HandTy ty, uint8_t const* src, int len) {
+				assert(dt != DunNil);
+				if (start == DunNil || start < dt) {
+					start = dt;
+				}
 				ty_[(int)(dt)] = ty;
 				memcpy(&(dun[dt])[0], src, len);
+				c[(int)(dt)] = len;
 			}
 			//打印指定墩牌型
 			void PrintCardList(DunTy dt);
 			//打印指定墩牌型
 			void PrintCardList(std::string const& name, DunTy dt, HandTy ty);
 		public:
-			//标记对应特殊牌型
+			//从哪墩开始的
+			DunTy start;
+			//总体对应特殊牌型
 			HandTy specialTy;
 			//各墩对应普通牌型
 			HandTy ty_[DunMax];
+			//每墩对应牌数c[i]
+			uint8_t c[DunMax];
 			//[0]头敦(3)/[1]中墩(5)/[2]尾墩(5)
 			uint8_t dun[DunMax][5];
 		};

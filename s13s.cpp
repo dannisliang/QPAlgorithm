@@ -2713,6 +2713,7 @@ namespace S13S {
 
 	//打印指定墩牌型
 	void CGameLogic::groupdun_t::PrintCardList(DunTy dt) {
+		assert(dt < DunMax);
 		switch (ty_[dt])
 		{
 		case SanPai:break;
