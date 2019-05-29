@@ -184,24 +184,24 @@ namespace S13S {
 		uint8_t cardsData_[MaxCardTotal];
 	public:
 		//////////////////////////////////////////////////////////////
-		//EnumList 枚举一墩牌型的所有可能，多叉树结构
-		class EnumList {
+		//EnumTree 枚举一墩牌型的所有可能，多叉树结构
+		class EnumTree {
 		public:
 			//枚举牌，枚举一墩牌，5/3张
-			typedef std::vector<uint8_t> EnumCards, EnumDunCards;
+			typedef std::vector<uint8_t>                DunCards;
 			//枚举项，pair<牌型，一墩牌>
-			typedef std::pair<HandTy, EnumCards const*> EnumItem;
-			//树结构，pair<枚举项，子枚举项列表>
-			typedef std::pair<EnumItem, EnumList*>  TreeEnumItem;
+			typedef std::pair<HandTy, DunCards const*>  EnumItem;
+			//树节点，pair<枚举项，子枚举项列表>
+			typedef std::pair<EnumItem, EnumTree*>      TreeNode;
 			//树节点，pair<树节点指针，对应树枚举项>
-			typedef std::pair<EnumList*, int>   TraverseTreeNode;
+			typedef std::pair<EnumTree*, int>   TraverseTreeNode;
 		public:
-			EnumList() {
+			EnumTree() {
 				Reset();
 				parent_ = NULL;
 				parentcursor_ = -1;
 			}
-			~EnumList() {
+			~EnumTree() {
 				Reset();
 			}
 			//初始化牌墩
@@ -224,41 +224,41 @@ namespace S13S {
 			//返回游标处枚举牌型
 			EnumItem const* GetCursorItem(int cursor);
 			//返回游标处枚举牌型对应余牌枚举子项列表指针
-			EnumList*& GetCursorChildItem(int cursor);
+			EnumTree*& GetCursorChild(int cursor);
 			//返回下一个枚举牌型(从大到小返回)
 			bool GetNextEnumItem(uint8_t const* src, int len,
-				EnumCards const*& dst, HandTy& ty,
+				DunCards const*& dst, HandTy& ty,
 				int& cursor, uint8_t *cpy, int& cpylen);
 		public:
 			//所有同花色五张/三张连续牌(五张/三张同花顺)
-			std::vector<EnumDunCards> v123sc;
+			std::vector<DunCards> v123sc;
 			//所有铁支(四张)
-			std::vector<EnumDunCards> v40;
+			std::vector<DunCards> v40;
 			//所有葫芦(一组三条加上一组对子)
-			std::vector<EnumDunCards> v32;
+			std::vector<DunCards> v32;
 			//所有同花五张/三张非连续牌(五张/三张同花)
-			std::vector<EnumDunCards> vsc;
+			std::vector<DunCards> vsc;
 			//所有非同花五张/三张连续牌(五张/三张顺子)
-			std::vector<EnumDunCards> v123;
+			std::vector<DunCards> v123;
 			//所有三条(三张)
-			std::vector<EnumDunCards> v30;
+			std::vector<DunCards> v30;
 			//所有两对(两个对子)
-			std::vector<EnumDunCards> v22;
+			std::vector<DunCards> v22;
 			//所有对子(一对)
-			std::vector<EnumDunCards> v20;
+			std::vector<DunCards> v20;
 			//散牌/乌龙(头敦中指向Ty123sc/Ty123/Tysc中的一个)
-			std::vector<EnumDunCards> const* wl;
+			std::vector<DunCards> const* wl;
 		public:
 			//标识头/中/尾墩
 			DunTy dt_;
 			//遍历游标
 			int c, cursor_;
 			//父亲节点
-			EnumList* parent_;
+			EnumTree* parent_;
 			//对应父节点游标位置
 			int parentcursor_;
 			//pair<枚举项牌型，对应余牌枚举子项列表>，多叉树结构
-			std::pair<EnumItem, EnumList*> tree[MaxEnumSZ];
+			TreeNode tree[MaxEnumSZ];
 		};
 	public:
 		//////////////////////////////////////////////////////////////
@@ -343,7 +343,7 @@ namespace S13S {
 			void Init();
 			void Reset();
 			//打印全部枚举墩牌型
-			void PrintEnumCards(bool ascend = true);
+			void PrintEnumCards(bool reserve = true);
 			//返回特殊牌型字符串
 			std::string StringSpecialTy();
 			//返回特殊牌型字符串
@@ -359,10 +359,10 @@ namespace S13S {
 			//手牌重复牌型
 			classify_t classify;
 			//根节点：初始枚举所有牌型列表
-			EnumList *rootEnumList;
+			EnumTree *rootEnumList;
 			//当前选择groups中的第几组优先
 			int current;
-			//枚举几组最优墩，指向EnumList::TraverseTreeNode成员
+			//枚举几组最优墩，指向EnumTree::TraverseTreeNode成员
 			std::vector<groupdun_t> groups;
 			//叶子节点列表
 			//枚举几组最优墩(头墩&中墩&尾墩加起来为一组)，由叶子节点向上往根节点遍历
@@ -370,7 +370,7 @@ namespace S13S {
 			//叶子节点 dt_ == DunFirst  时，叶子节点(头墩)/父节点(中墩)/根节点(尾墩)
 			//叶子节点 dt_ == DunSecond 时，叶子节点(中墩)/父节点 = 根节点(尾墩)
 			//叶子节点 dt_ == DunLast   时，叶子节点 = 根节点(尾墩)
-			std::vector<EnumList::TraverseTreeNode> leafList;
+			std::vector<EnumTree::TraverseTreeNode> leafList;
 		};
 	public:
 		//牌型相同的src与dst比大小，牌数相同
@@ -395,9 +395,9 @@ namespace S13S {
 		//src uint8_t const* 手牌余牌(13/8/3)，初始13张，按5/5/3依次抽，余牌依次为13/8/3
 		//n int 抽取n张(5/5/3) 第一次抽5张余8张，第二次抽5张余3张，第三次取余下3张抽完
 		//classify classify_t& 存放分类信息(所有重复四张/三张/二张/散牌/余牌)
-		//enumList EnumList& 存放枚举墩牌型列表数据 dt DunTy 指定为第几墩
+		//enumList EnumTree& 存放枚举墩牌型列表数据 dt DunTy 指定为第几墩
 		static void EnumCards(uint8_t const* src, int len,
-			int n, classify_t& classify, EnumList& enumList, DunTy dt);
+			int n, classify_t& classify, EnumTree& enumList, DunTy dt);
 		//按照尾墩5张/中墩5张/头墩3张依次抽取枚举普通牌型
 		//src uint8_t const* 手牌余牌(13/8/3)，初始13张，按5/5/3依次抽，余牌依次为13/8/3
 		//n int 抽取n张(5/5/3) 第一次抽5张余8张，第二次抽5张余3张，第三次取余下3张抽完
