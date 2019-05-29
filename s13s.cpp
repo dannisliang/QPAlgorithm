@@ -3109,7 +3109,7 @@ namespace S13S {
 			//一副手牌
 			CGameLogic::PrintCardList(cards, n);
 			//手牌牌型分析
-			int c = g.AnalyseHandCards(cards, n, 2000, hand);
+			int c = g.AnalyseHandCards(cards, n, 20, hand);
 			//查看手牌枚举墩牌型
 			hand.PrintEnumCards();
 			//查看重复牌型和散牌
