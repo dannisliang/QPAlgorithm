@@ -1588,6 +1588,24 @@ namespace S13S {
 		}
 		return c;
 	}
+	
+	//同花顺之间/同花之间/顺子之间比较大小
+ 	static bool As123scbyPointG(std::vector<uint8_t> const* a, std::vector<uint8_t> const* b) {
+		return CGameLogic::CompareCards(&a->front(), &b->front(), a->size(), true, TyNil) > 0;
+ 	}
+	//同花顺之间/同花之间/顺子之间比较大小
+ 	static bool As123scbyPointL(std::vector<uint8_t> const* a, std::vector<uint8_t> const* b) {
+		return CGameLogic::CompareCards(&a->front(), &b->front(), a->size(), true, TyNil) < 0;
+ 	}
+	//同花顺之间/同花之间/顺子之间比较大小
+	static void SortCardsByPoint_src123sc(std::vector<uint8_t> const** psrc, int n, bool ascend) {
+		if (ascend) {
+			std::sort(psrc, psrc + n, As123scbyPointL);
+		}
+		else {
+			std::sort(psrc, psrc + n, As123scbyPointG);
+		}
+	}
 
 	//简单牌型分类/重复(四张/三张/二张)/同花/顺子/同花顺/散牌
 	//src uint8_t const* 牌源
@@ -1640,13 +1658,64 @@ namespace S13S {
 		//SortCards_src(pdst, c, true, true);
 		//枚举所有不区分花色n张连续牌型(同花顺/顺子)
 		std::vector<std::vector<short>> ctx;
-		std::vector<std::vector<uint8_t>> dst;
+		std::vector<std::vector<uint8_t>> dst, dst0_, dst1_, dstc_;
 		std::vector<bool> clr;
 		EnumConsecCards(pdst, c, cpy, cpylen, n, ctx, dst, clr);
 		//枚举所有区分花色n张连续牌(同花顺/顺子)
-		EnumConsecCardsByColor(pdst, ctx, dst, clr, dst0, dst1);
+		EnumConsecCardsByColor(pdst, ctx, dst, clr, dst0_, dst1_);
 		//枚举所有同花色n张不连续牌型(同花)
-		EnumSameColorCards(pdst, c, cpy, cpylen, n, ctx, dstc);
+		EnumSameColorCards(pdst, c, cpy, cpylen, n, ctx, dstc_);
+		{
+			//同花色n张连续牌
+			int c = 0;
+			static int const MaxSZ = 500;
+			std::vector<uint8_t> const* psrc[MaxSZ] = { 0 };
+			for (std::vector<std::vector<uint8_t>>::const_iterator it = dst0_.begin();
+				it != dst0_.end(); ++it) {
+				psrc[c++] = &*it;
+			}
+			//psrc组与组之间按牌值降序排列(从大到小)
+			SortCardsByPoint_src123sc(psrc, c, false);
+			for (int i = 0; i < c; ++i) {
+				assert(psrc[i]->size() == n);
+				std::vector<uint8_t> v(&psrc[i]->front(), &psrc[i]->front() + psrc[i]->size());
+				dst0.push_back(v);
+			}
+		}
+		{
+			//非同花n张连续牌
+			int c = 0;
+			static int const MaxSZ = 500;
+			std::vector<uint8_t> const* psrc[MaxSZ] = { 0 };
+			for (std::vector<std::vector<uint8_t>>::const_iterator it = dst1_.begin();
+				it != dst1_.end(); ++it) {
+				psrc[c++] = &*it;
+			}
+			//psrc组与组之间按牌值降序排列(从大到小)
+			SortCardsByPoint_src123sc(psrc, c, false);
+			for (int i = 0; i < c; ++i) {
+				assert(psrc[i]->size() == n);
+				std::vector<uint8_t> v(&psrc[i]->front(), &psrc[i]->front() + psrc[i]->size());
+				dst1.push_back(v);
+			}
+		}
+		{
+			//同花n张非连续牌
+			int c = 0;
+			static int const MaxSZ = 500;
+			std::vector<uint8_t> const* psrc[MaxSZ] = { 0 };
+			for (std::vector<std::vector<uint8_t>>::const_iterator it = dstc_.begin();
+				it != dstc_.end(); ++it) {
+				psrc[c++] = &*it;
+			}
+			//psrc组与组之间按牌值降序排列(从大到小)
+			SortCardsByPoint_src123sc(psrc, c, false);
+			for (int i = 0; i < c; ++i) {
+				assert(psrc[i]->size() == n);
+				std::vector<uint8_t> v(&psrc[i]->front(), &psrc[i]->front() + psrc[i]->size());
+				dstc.push_back(v);
+			}
+		}
 #endif
 	}
 
@@ -1701,7 +1770,7 @@ namespace S13S {
 		return c;
 	}
 	
-	//葫芦牌型组牌规则，三张尽量取最大(不同的手牌，三张决定了葫芦之间的大小)，对子取值越小，对其余组牌干扰越小
+	//葫芦牌型之间比大小
 	static bool As32byPointG(const uint8_t(*const a)[5], const uint8_t(*const b)[5]) {
 		//比较三张的大小(中间的牌)
 		uint8_t p0 = CGameLogic::GetCardPoint(a[0][2]);
@@ -1720,7 +1789,7 @@ namespace S13S {
 		}
 		return sp0 < sp1;
 	}
-	//葫芦牌型组牌规则，三张尽量取最大(不同的手牌，三张决定了葫芦之间的大小)，对子取值越小，对其余组牌干扰越小
+	//葫芦牌型之间比大小
 	static bool As32byPointL(const uint8_t(*const a)[5], const uint8_t(*const b)[5]) {
 		//比较三张的大小(中间的牌)
 		uint8_t p0 = CGameLogic::GetCardPoint(a[0][2]);
@@ -1739,7 +1808,7 @@ namespace S13S {
 		}
 		return sp0 > sp1;
 	}
-	//葫芦牌型组牌规则，三张尽量取最大(不同的手牌，三张决定了葫芦之间的大小)，对子取值越小，对其余组牌干扰越小
+	//葫芦牌型之间比大小
 	static void SortCardsByPoint_src32(uint8_t(**const psrc)[5], int n, bool ascend) {
 		if (ascend) {
 			std::sort(psrc, psrc + n, As32byPointL);
@@ -1763,7 +1832,8 @@ namespace S13S {
 		std::vector<std::vector<uint8_t>>& dst) {
 		//printf("--- *** 枚举所有葫芦\n");
 		int c = 0;
-		uint8_t src[MaxEnumSZ][5] = { 0 };
+		static int const MaxSZ = 500;
+		uint8_t src[MaxSZ][5] = { 0 };
 		int n = c4 + c3 + c2;
 		CFuncC fnC;
 		std::vector<std::vector<int>> vec;
@@ -1816,7 +1886,7 @@ namespace S13S {
 						//for (std::vector<uint8_t>::iterator ir = it3->begin(); ir != it3->end(); ++ir) {
 						//	v.push_back(*ir);
 						//}
-						assert(c < MaxEnumSZ);
+						assert(c < MaxSZ);
 						assert(it2->size() + it3->size() == 5);
 						memcpy(&(src[c])[0], &it2->front(), it2->size());
 						memcpy(&(src[c++])[it2->size()], &it3->front(), it3->size());
@@ -1850,7 +1920,7 @@ namespace S13S {
 						//for (std::vector<uint8_t>::iterator ir = it3->begin(); ir != it3->end(); ++ir) {
 						//	v.push_back(*ir);
 						//}
-						assert(c < MaxEnumSZ);
+						assert(c < MaxSZ);
 						assert(it2->size() + it3->size() == 5);
 						memcpy(&(src[c])[0], &it2->front(), it2->size());
 						memcpy(&(src[c++])[it2->size()], &it3->front(), it3->size());
@@ -1862,19 +1932,18 @@ namespace S13S {
 			}
 			//printf("\n--- *** end c=%d\n", dst.size());
 		}
-		
 		{
 			n = c;
 			//uint8_t(*src[6])[4] = { 0 };
 			typedef uint8_t(*Ptr)[5];
-			Ptr psrc[MaxEnumSZ] = { 0 };
+			Ptr psrc[MaxSZ] = { 0 };
 			c = 0;
 			for (int i = 0; i < n; ++i) {
 				psrc[c++] = &src[i];
 			}
 			//葫芦牌型组牌规则，三张尽量取最大(不同的手牌，三张决定了葫芦之间的大小)，对子取值越小，对其余组牌干扰越小
-			//psrc组与组之间按牌值升序排列(从小到大)
-			SortCardsByPoint_src32(psrc, n, true);
+			//psrc组与组之间按牌值降序排列(从大到小)
+			SortCardsByPoint_src32(psrc, n, false);
 			for (int i = 0; i < n; ++i) {
 				std::vector<uint8_t> v(&(*psrc[i])[0], &(*psrc[i])[0] + 5);
 				dst.push_back(v);
@@ -1883,6 +1952,28 @@ namespace S13S {
 		return dst.size();
 	}
 	
+	//三条之间比大小
+	static bool As30byPointG(const uint8_t(*const a)[3], const uint8_t(*const b)[3]) {
+		uint8_t p0 = CGameLogic::GetCardPoint(a[0][0]);
+		uint8_t p1 = CGameLogic::GetCardPoint(b[0][0]);
+		return p0 > p1;
+	}
+	//三条之间比大小
+	static bool As30byPointL(const uint8_t(*const a)[3], const uint8_t(*const b)[3]) {
+		uint8_t p0 = CGameLogic::GetCardPoint(a[0][0]);
+		uint8_t p1 = CGameLogic::GetCardPoint(b[0][0]);
+		return p0 < p1;
+	}
+	//三条之间比大小
+	static void SortCardsByPoint_src30(uint8_t(**const psrc)[3], int n, bool ascend) {
+		if (ascend) {
+			std::sort(psrc, psrc + n, As30byPointL);
+		}
+		else {
+			std::sort(psrc, psrc + n, As30byPointG);
+		}
+	}
+
 	//枚举所有三条(三张值相同的牌)
 	//psrc uint8_t(**const)[4] 衔接dst4/dst3/dst2
 	//src4 uint8_t(*const)[4] 所有四张牌型牌源，c4 四张牌型数
@@ -1896,13 +1987,16 @@ namespace S13S {
 		uint8_t(*const src2)[4], int const c2,
 		std::vector<std::vector<uint8_t>>& dst) {
 		//printf("--- *** 枚举所有三条\n");
+		int c = 0;
+		static int const MaxSZ = 500;
+		uint8_t src[MaxSZ][3] = { 0 };
 		int n = c4 + c3 + c2;
 		CFuncC fnC;
 		std::vector<std::vector<int>> vec;
 		//psrc组与组之间按牌值升序排列(从小到大)
 		//SortCards_src(psrc, n, true, true);
 		//////从n组里面选取任意1组的组合数C(n,1) //////
-		int c = fnC.FuncC(n, 1, vec);
+		/*c = */fnC.FuncC(n, 1, vec);
 		//for (int i = 0; i < n; ++i) {
 		//	PrintCardList(psrc[i][0], get_card_c(psrc[i][0], 4));
 		//}
@@ -1934,24 +2028,103 @@ namespace S13S {
 #if 0
 					std::vector<uint8_t> v(&it3->front(), &it3->front() + it3->size());
 #else
-					std::vector<uint8_t> v;
-					for (std::vector<uint8_t>::iterator ir = it3->begin(); ir != it3->end(); ++ir) {
-						v.push_back(*ir);
-					}
+					//std::vector<uint8_t> v;
+					//for (std::vector<uint8_t>::iterator ir = it3->begin(); ir != it3->end(); ++ir) {
+					//	v.push_back(*ir);
+					//}
+					assert(c < MaxSZ);
+					assert(it3->size() == 3);
+					memcpy(&(src[c++])[0], &it3->front(), it3->size());
 #endif
 					//PrintCardList(&v.front(), v.size());
-					dst.push_back(v);
+					//dst.push_back(v);
 				}
 			}
 			//printf("\n--- *** end c=%d\n", dst.size());
 		}
-		//for (std::vector<std::vector<uint8_t>>::const_iterator it = dst.begin();
-		//	it != dst.end(); ++it) {
-		//	PrintCardList(&it->front(), it->size());
-		//}
+		{
+			n = c;
+			//uint8_t(*src[6])[4] = { 0 };
+			typedef uint8_t(*Ptr)[3];
+			Ptr psrc[MaxSZ] = { 0 };
+			c = 0;
+			for (int i = 0; i < n; ++i) {
+				psrc[c++] = &src[i];
+			}
+			//psrc组与组之间按牌值降序排列(从大到小)
+			SortCardsByPoint_src30(psrc, n, false);
+			for (int i = 0; i < n; ++i) {
+				std::vector<uint8_t> v(&(*psrc[i])[0], &(*psrc[i])[0] + 3);
+				dst.push_back(v);
+			}
+		}
 		return dst.size();
 	}
 	
+	//两对之间比大小
+	static bool As22byPointG(const uint8_t(*const a)[4], const uint8_t(*const b)[4]) {
+		uint8_t s0, p0;
+		if (CGameLogic::GetCardValue(a[0][0]) == A) {
+			s0 = CGameLogic::GetCardPoint(a[0][0]);
+			p0 = CGameLogic::GetCardPoint(a[0][3]);
+		}
+		else {
+			s0 = CGameLogic::GetCardPoint(a[0][3]);
+			p0 = CGameLogic::GetCardPoint(a[0][0]);
+		}
+		uint8_t s1, p1;
+		if (CGameLogic::GetCardValue(b[0][0]) == A) {
+			s1 = CGameLogic::GetCardPoint(b[0][0]);
+			p1 = CGameLogic::GetCardPoint(b[0][3]);
+		}
+		else {
+			s1 = CGameLogic::GetCardPoint(b[0][3]);
+			p1 = CGameLogic::GetCardPoint(b[0][0]);
+		}
+		if (s0 != s1) {
+			//比较最大的对子
+			return s0 > s1;
+		}
+		//比较次大的对子
+		return p0 > p1;
+	}
+	//两对之间比大小
+	static bool As22byPointL(const uint8_t(*const a)[4], const uint8_t(*const b)[4]) {
+		uint8_t s0, p0;
+		if (CGameLogic::GetCardValue(a[0][0]) == A) {
+			s0 = CGameLogic::GetCardPoint(a[0][0]);
+			p0 = CGameLogic::GetCardPoint(a[0][3]);
+		}
+		else {
+			s0 = CGameLogic::GetCardPoint(a[0][3]);
+			p0 = CGameLogic::GetCardPoint(a[0][0]);
+		}
+		uint8_t s1, p1;
+		if (CGameLogic::GetCardValue(b[0][0]) == A) {
+			s1 = CGameLogic::GetCardPoint(b[0][0]);
+			p1 = CGameLogic::GetCardPoint(b[0][3]);
+		}
+		else {
+			s1 = CGameLogic::GetCardPoint(b[0][3]);
+			p1 = CGameLogic::GetCardPoint(b[0][0]);
+		}
+		if (s0 != s1) {
+			//比较最大的对子
+			return s0 < s1;
+		}
+		//比较次大的对子
+		return p0 < p1;
+	}
+	//两对之间比大小
+	static void SortCardsByPoint_src22(uint8_t(**const psrc)[4], int n, bool ascend) {
+		if (ascend) {
+			std::sort(psrc, psrc + n, As22byPointL);
+		}
+		else {
+			std::sort(psrc, psrc + n, As22byPointG);
+		}
+	}
+
 	//枚举所有两对(两个对子加上一张单牌)
 	//psrc uint8_t(**const)[4] 衔接dst4/dst3/dst2
 	//src4 uint8_t(*const)[4] 所有四张牌型牌源，c4 四张牌型数
@@ -1965,13 +2138,16 @@ namespace S13S {
 		uint8_t(*const src2)[4], int const c2,
 		std::vector<std::vector<uint8_t>>& dst) {
 		//printf("--- *** 枚举所有两对\n");
+		int c = 0;
+		static int const MaxSZ = 500;
+		uint8_t src[MaxSZ][4] = { 0 };
 		int n = c4 + c3 + c2;
 		CFuncC fnC;
 		std::vector<std::vector<int>> vec;
 		//psrc组与组之间按牌值升序排列(从小到大)
 		//SortCards_src(psrc, n, true, true);
 		//////从n组里面选取任意2组的组合数C(n,2) //////
-		int c = fnC.FuncC(n, 2, vec);
+		/*int c = */fnC.FuncC(n, 2, vec);
 		//for (int i = 0; i < n; ++i) {
 		//	PrintCardList(psrc[i][0], get_card_c(psrc[i][0], 4));
 		//}
@@ -2009,27 +2185,65 @@ namespace S13S {
 					v.resize(v.size() + it3->size());
 					memcpy(&v.front() + v.size(), &it3->front(), it3->size());
 #else
-					std::vector<uint8_t> v;
-					for (std::vector<uint8_t>::iterator ir = it2->begin(); ir != it2->end(); ++ir) {
-						v.push_back(*ir);
-					}
-					for (std::vector<uint8_t>::iterator ir = it3->begin(); ir != it3->end(); ++ir) {
-						v.push_back(*ir);
-					}
+					//std::vector<uint8_t> v;
+					//for (std::vector<uint8_t>::iterator ir = it2->begin(); ir != it2->end(); ++ir) {
+					//	v.push_back(*ir);
+					//}
+					//for (std::vector<uint8_t>::iterator ir = it3->begin(); ir != it3->end(); ++ir) {
+					//	v.push_back(*ir);
+					//}
+					assert(c < MaxSZ);
+					assert(it2->size() == 2 && it3->size() == 2);
+					memcpy(&(src[c])[0], &it2->front(), it2->size());
+					memcpy(&(src[c++])[it2->size()], &it3->front(), it3->size());
 #endif
 					//PrintCardList(&v.front(), v.size());
-					dst.push_back(v);
+					//dst.push_back(v);
 				}
 			}
 			//printf("\n--- *** end c=%d\n", dst.size());
 		}
-		//for (std::vector<std::vector<uint8_t>>::const_iterator it = dst.begin();
-		//	it != dst.end(); ++it) {
-		//	PrintCardList(&it->front(), it->size());
-		//}
+		{
+			n = c;
+			//uint8_t(*src[6])[4] = { 0 };
+			typedef uint8_t(*Ptr)[4];
+			Ptr psrc[MaxSZ] = { 0 };
+			c = 0;
+			for (int i = 0; i < n; ++i) {
+				psrc[c++] = &src[i];
+			}
+			//psrc组与组之间按牌值降序排列(从大到小)
+			SortCardsByPoint_src22(psrc, n, false);
+			for (int i = 0; i < n; ++i) {
+				std::vector<uint8_t> v(&(*psrc[i])[0], &(*psrc[i])[0] + 4);
+				dst.push_back(v);
+			}
+		}
 		return dst.size();
 	}
 	
+	//对子之间比大小
+	static bool As20byPointG(const uint8_t(*const a)[2], const uint8_t(*const b)[2]) {
+		uint8_t p0 = CGameLogic::GetCardPoint(a[0][0]);
+		uint8_t p1 = CGameLogic::GetCardPoint(b[0][0]);
+		return p0 > p1;
+	}
+	//对子之间比大小
+	static bool As20byPointL(const uint8_t(*const a)[2], const uint8_t(*const b)[2]) {
+		uint8_t p0 = CGameLogic::GetCardPoint(a[0][0]);
+		uint8_t p1 = CGameLogic::GetCardPoint(b[0][0]);
+		return p0 < p1;
+	}
+	//对子之间比大小
+	static void SortCardsByPoint_src20(uint8_t(**const psrc)[2], int n, bool ascend) {
+		if (ascend) {
+			std::sort(psrc, psrc + n, As20byPointL);
+		}
+		else {
+			std::sort(psrc, psrc + n, As20byPointG);
+		}
+	}
+
 	//枚举所有对子(一对)
 	//psrc uint8_t(**const)[4] 衔接dst4/dst3/dst2
 	//src4 uint8_t(*const)[4] 所有四张牌型牌源，c4 四张牌型数
@@ -2043,13 +2257,16 @@ namespace S13S {
 		uint8_t(*const src2)[4], int const c2,
 		std::vector<std::vector<uint8_t>>& dst) {
 		//printf("--- *** 枚举所有对子\n");
+		int c = 0;
+		static int const MaxSZ = 50;
+		uint8_t src[MaxSZ][2] = { 0 };
 		int n = c4 + c3 + c2;
 		CFuncC fnC;
 		std::vector<std::vector<int>> vec;
 		//psrc组与组之间按牌值升序排列(从小到大)
 		//SortCards_src(psrc, n, true, true);
 		//////从n组里面选取任意1组的组合数C(n,1) //////
-		int c = fnC.FuncC(n, 1, vec);
+		/*int c = */fnC.FuncC(n, 1, vec);
 		//for (int i = 0; i < n; ++i) {
 		//	PrintCardList(psrc[i][0], get_card_c(psrc[i][0], 4));
 		//}
@@ -2081,20 +2298,35 @@ namespace S13S {
 #if 0
 				std::vector<uint8_t> v(&it3->front(), &it3->front() + it3->size());
 #else
-				std::vector<uint8_t> v;
-				for (std::vector<uint8_t>::iterator ir = it3->begin(); ir != it3->end(); ++ir) {
-					v.push_back(*ir);
-				}
+// 				std::vector<uint8_t> v;
+// 				for (std::vector<uint8_t>::iterator ir = it3->begin(); ir != it3->end(); ++ir) {
+// 					v.push_back(*ir);
+// 				}
+				assert(c < MaxSZ);
+				assert(it3->size() == 2);
+				memcpy(&(src[c++])[0], &it3->front(), it3->size());
 #endif
 				//PrintCardList(&v.front(), v.size());
-				dst.push_back(v);
+				//dst.push_back(v);
 			}
 			//printf("\n--- *** end c=%d\n", dst.size());
 		}
-		//for (std::vector<std::vector<uint8_t>>::const_iterator it = dst.begin();
-		//	it != dst.end(); ++it) {
-		//	PrintCardList(&it->front(), it->size());
-		//}
+		{
+			n = c;
+			//uint8_t(*src[6])[4] = { 0 };
+			typedef uint8_t(*Ptr)[2];
+			Ptr psrc[MaxSZ] = { 0 };
+			c = 0;
+			for (int i = 0; i < n; ++i) {
+				psrc[c++] = &src[i];
+			}
+			//psrc组与组之间按牌值降序排列(从大到小)
+			SortCardsByPoint_src20(psrc, n, false);
+			for (int i = 0; i < n; ++i) {
+				std::vector<uint8_t> v(&(*psrc[i])[0], &(*psrc[i])[0] + 2);
+				dst.push_back(v);
+			}
+		}
 		return dst.size();
 	}
 	
@@ -2304,6 +2536,7 @@ namespace S13S {
 	}
 	
 	void CGameLogic::classify_t::PrintCardList() {
+		printf("\n\n\n");
 		for (int i = 0; i < c4; ++i) {
 			CGameLogic::PrintCardList(&(dst4[i])[0], 4);
 		}
@@ -2315,6 +2548,7 @@ namespace S13S {
 		}
 		printf("---\n");
 		CGameLogic::PrintCardList(cpy, cpylen);
+		printf("\n\n");
 	}
 
 	//手牌牌型分析(特殊牌型判断/枚举三墩组合)，算法入口 /////////
@@ -2350,7 +2584,7 @@ namespace S13S {
 		
 		//枚举尾墩/5张 //////
 		EnumCards(src, len, 5, hand.classify, *rootEnumList, DunLast);
-	end:
+	entry_root_iterator:
 		while (c < n) {
 			//返回一个枚举牌型及对应的余牌
 			//按同花顺/铁支/葫芦/同花/顺子/三条/两对/对子/散牌的顺序
@@ -2381,6 +2615,7 @@ namespace S13S {
 			classify_t classify = { 0 };
 			//从余牌中枚举中墩/5张 //////
 			EnumCards(psrc, lensrc, 5, classify, *childEnumList, DunSecond);
+		entry_child_iterator:
 			while (c < n) {
 				//返回一个枚举牌型及对应的余牌
 				//按同花顺/铁支/葫芦/同花/顺子/三条/两对/对子/散牌的顺序
@@ -2395,9 +2630,11 @@ namespace S13S {
 					if (it == masks.end()) {
 						//根节点为叶子节点，记录尾墩
 						leafList.push_back(EnumList::TraverseTreeNode(rootEnumList, cursorRoot));
-						if (++c >= n) {
-							goto end;
-						}
+// 						if (++c >= n) {
+// 							goto entry_root_iterator;
+// 						}
+						++c;
+						//goto entry_root_iterator;
 					}
 					break;
 				}
@@ -2411,12 +2648,11 @@ namespace S13S {
 					}
 					else {
 						//牌型相同从大到小比点数，葫芦牌型比较三张的大小(中间的牌)
-						if (CompareCards(&root->front(), &child->front(), child->size(), tyChild) < 0) {
+						if (CompareCards(&root->front(), &child->front(), child->size(), false, tyChild) < 0) {
 							continue;
 						}
 					}
 				}
-				
 				masks[maskRoot] = true;
 				
 				//printf("\n取中墩 = [%s] ", StringCardType(tyChild).c_str());
@@ -2456,9 +2692,11 @@ namespace S13S {
 						if (it == masks.end()) {
 							//子节点为叶子节点，记录中墩和尾墩，由叶子节点向上查找根节点
 							leafList.push_back(EnumList::TraverseTreeNode(childEnumList, cursorChild));
-							if (++c >= n) {
-								goto end;
-							}
+// 							if (++c >= n) {
+// 								goto entry_root_iterator;
+// 							}
+							++c;
+							//goto entry_root_iterator;
 						}
 						break;
 					}
@@ -2475,7 +2713,7 @@ namespace S13S {
 						else {
 							if (tyLeaf == Ty30 || tyLeaf == Ty20) {
 								//牌型相同从大到小比点数，葫芦牌型比较三张的大小(中间的牌)
-								if (CompareCards(&child->front(), &leaf->front(), leaf->size(), tyLeaf) < 0) {
+								if (CompareCards(&child->front(), &leaf->front(), leaf->size(), false, tyLeaf) < 0) {
 									continue;
 								}
 							}
@@ -2495,9 +2733,12 @@ namespace S13S {
 					
 					//叶子节点作为叶子节点，记录头墩，中墩和尾墩，由叶子节点向上查找父节点和根节点
 					leafList.push_back(EnumList::TraverseTreeNode(leafEnumList, cursorLeaf));
-					if (++c >= n) {
-						goto end;
-					}
+// 					if (++c >= n) {
+// 						goto entry_root_iterator;
+// 					}
+					++c;
+					//重新从根节点开始迭代游标 //////
+					goto entry_root_iterator;
 				}
 			}
 		}
@@ -2675,50 +2916,50 @@ namespace S13S {
 		{
 			c = 0;
 			//同花顺
-			for (std::vector<EnumDunCards>::const_reverse_iterator it = v123sc.rbegin();
-				it != v123sc.rend(); ++it) {
+			for (std::vector<EnumDunCards>::const_iterator it = v123sc.begin();
+				it != v123sc.end(); ++it) {
 				assert(c < MaxEnumSZ);
 				tree[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty123sc, &*it), NULL);
 			}
 			//铁支
-			for (std::vector<EnumDunCards>::const_reverse_iterator it = v40.rbegin();
-				it != v40.rend(); ++it) {
+			for (std::vector<EnumDunCards>::const_iterator it = v40.begin();
+				it != v40.end(); ++it) {
 				assert(c < MaxEnumSZ);
 				tree[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty40, &*it), NULL);
 			}
 			//葫芦
-			for (std::vector<EnumDunCards>::const_reverse_iterator it = v32.rbegin();
-				it != v32.rend(); ++it) {
+			for (std::vector<EnumDunCards>::const_iterator it = v32.begin();
+				it != v32.end(); ++it) {
 				assert(c < MaxEnumSZ);
 				tree[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty32, &*it), NULL);
 			}
 			//同花
-			for (std::vector<EnumDunCards>::const_reverse_iterator it = vsc.rbegin();
-				it != vsc.rend(); ++it) {
+			for (std::vector<EnumDunCards>::const_iterator it = vsc.begin();
+				it != vsc.end(); ++it) {
 				assert(c < MaxEnumSZ);
 				tree[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Tysc, &*it), NULL);
 			}
 			//顺子
-			for (std::vector<EnumDunCards>::const_reverse_iterator it = v123.rbegin();
-				it != v123.rend(); ++it) {
+			for (std::vector<EnumDunCards>::const_iterator it = v123.begin();
+				it != v123.end(); ++it) {
 				assert(c < MaxEnumSZ);
 				tree[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty123, &*it), NULL);
 			}
 			//三条
-			for (std::vector<EnumDunCards>::const_reverse_iterator it = v30.rbegin();
-				it != v30.rend(); ++it) {
+			for (std::vector<EnumDunCards>::const_iterator it = v30.begin();
+				it != v30.end(); ++it) {
 				assert(c < MaxEnumSZ);
 				tree[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty30, &*it), NULL);
 			}
 			//两对
-			for (std::vector<EnumDunCards>::const_reverse_iterator it = v22.rbegin();
-				it != v22.rend(); ++it) {
+			for (std::vector<EnumDunCards>::const_iterator it = v22.begin();
+				it != v22.end(); ++it) {
 				assert(c < MaxEnumSZ);
 				tree[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty22, &*it), NULL);
 			}
 			//对子
-			for (std::vector<EnumDunCards>::const_reverse_iterator it = v20.rbegin();
-				it != v20.rend(); ++it) {
+			for (std::vector<EnumDunCards>::const_iterator it = v20.begin();
+				it != v20.end(); ++it) {
 				assert(c < MaxEnumSZ);
 				tree[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty20, &*it), NULL);
 			}
@@ -2801,22 +3042,22 @@ namespace S13S {
 	}
 
 	//打印枚举牌型
-	void CGameLogic::EnumList::PrintEnumCards(HandTy ty) {
+	void CGameLogic::EnumList::PrintEnumCards(bool reverse, HandTy ty) {
 		switch (ty)
 		{
-		case Tysp:		PrintEnumCards("乌龙", ty, *wl);		break;//乌龙
-		case Ty20:		PrintEnumCards("对子", ty, v20);		break;//对子
-		case Ty22:		PrintEnumCards("两对", ty, v22);		break;//两对
-		case Ty30:		PrintEnumCards("三条", ty, v30);		break;//三条
-		case Ty123:		PrintEnumCards("顺子", ty, v123);		break;//顺子
-		case Tysc:		PrintEnumCards("同花", ty, vsc);		break;//同花
-		case Ty32:		PrintEnumCards("葫芦", ty, v32);		break;//葫芦
-		case Ty40:		PrintEnumCards("铁支", ty, v40);		break;//铁支
-		case Ty123sc:	PrintEnumCards("同花顺", ty, v123sc);	break;//同花顺
+		case Tysp:		PrintEnumCards("乌龙", ty, *wl, reverse);		break;//乌龙
+		case Ty20:		PrintEnumCards("对子", ty, v20, reverse);		break;//对子
+		case Ty22:		PrintEnumCards("两对", ty, v22, reverse);		break;//两对
+		case Ty30:		PrintEnumCards("三条", ty, v30, reverse);		break;//三条
+		case Ty123:		PrintEnumCards("顺子", ty, v123, reverse);		break;//顺子
+		case Tysc:		PrintEnumCards("同花", ty, vsc, reverse);		break;//同花
+		case Ty32:		PrintEnumCards("葫芦", ty, v32, reverse);		break;//葫芦
+		case Ty40:		PrintEnumCards("铁支", ty, v40, reverse);		break;//铁支
+		case Ty123sc:	PrintEnumCards("同花顺", ty, v123sc, reverse);	break;//同花顺
 		case TyAllBase:
 		default: {
 			for (int i = Ty123sc; i >= Ty20; --i) {
-				PrintEnumCards((HandTy)(i));
+				PrintEnumCards(reverse, (HandTy)(i));
 			}
 			break;
 		}
@@ -2824,12 +3065,20 @@ namespace S13S {
 	}
 
 	//打印枚举牌型
-	void CGameLogic::EnumList::PrintEnumCards(std::string const& name, HandTy ty, std::vector<std::vector<uint8_t>> const& src) {
+	void CGameLogic::EnumList::PrintEnumCards(std::string const& name, HandTy ty, std::vector<std::vector<uint8_t>> const& src, bool reverse) {
 		if (src.size() > 0) {
 			printf("--- *** 第[%d]墩 - %s[%s]\n", dt_ + 1, name.c_str(), StringCardType(ty).c_str());
-			for (std::vector<std::vector<uint8_t>>::const_reverse_iterator it = src.rbegin();
-				it != src.rend(); ++it) {
-				PrintCardList(&it->front(), it->size());
+			if (reverse) {
+				for (std::vector<std::vector<uint8_t>>::const_reverse_iterator it = src.rbegin();
+					it != src.rend(); ++it) {
+					PrintCardList(&it->front(), it->size());
+				}
+			}
+			else {
+				for (std::vector<std::vector<uint8_t>>::const_iterator it = src.begin();
+					it != src.end(); ++it) {
+					PrintCardList(&it->front(), it->size());
+				}
 			}
 		}
 	}
@@ -3046,7 +3295,54 @@ namespace S13S {
 		//初始化牌墩
 		enumList.Init(dt);
 	}
-	
+
+	//牌型相同的src与dst比大小，且牌数必须相同
+	int CGameLogic::CompareCards(uint8_t const* src, uint8_t const* dst, int n, bool clr, HandTy ty) {
+		switch (ty) {
+		case Ty32: {
+			//葫芦牌型比较三张的大小(中间的牌)
+			return GetCardPoint(src[2]) > GetCardPoint(dst[2]);
+		}
+		default: {
+			uint8_t psrc[MaxSZ] = { 0 }, pdst[MaxSZ] = { 0 };
+			memcpy(psrc, src, n);
+			memcpy(pdst, dst, n);
+			CGameLogic::SortCards(psrc, n, false, true, true);
+			CGameLogic::SortCards(pdst, n, false, true, true);
+			//牌型相同按顺序比点，先将src/dst按照牌点升序排
+			for (int i = n - 1; i >= 0; --i) {
+				uint8_t p0 = GetCardPoint(psrc[i]);
+				uint8_t p1 = GetCardPoint(pdst[i]);
+				if (p0 != p1) {
+					return p0 - p1;
+				}
+			}
+			if (clr) {
+				//点数相同按顺序比花色
+				for (int i = n - 1; i >= 0; --i) {
+					uint8_t c0 = GetCardColor(src[i]);
+					uint8_t c1 = GetCardColor(dst[i]);
+					if (c0 != c1) {
+						return c0 - c1;
+					}
+				}
+			}
+			break;
+		}
+		}
+		return 0;
+	}
+
+	//玩家手牌类型
+	HandTy CGameLogic::GetHandCardsType(handinfo_t& hand, DunTy dt)
+	{
+		if (hand.specialTy_ != TyNil) {
+			return hand.specialTy_;
+		}
+		//EnumList& dun = hand.dun[dt];
+
+	}
+
 	//枚举牌型测试
 	void CGameLogic::TestEnumCards() {
 		CGameLogic g;
@@ -3073,20 +3369,24 @@ namespace S13S {
 			//一副手牌
 			CGameLogic::PrintCardList(cards, MaxCount);
  			//手牌牌型分析
-			int c = g.AnalyseHandCards(cards, MaxCount, 20, hand);
-			//查看枚举葫芦牌型
-			//hand.rootEnumList->PrintEnumCards(Ty32);
-			//查看手牌枚举三墩牌型
-			hand.PrintEnumCards();
-			//查看重复牌型和散牌
-			hand.classify.PrintCardList();
-			printf("--- *** c = %d %s\n\n\n\n", c, hand.StringSpecialTy().c_str());
-			//有特殊牌型时暂停
+			int c = g.AnalyseHandCards(cards, MaxCount, 5, hand);
+			//有特殊牌型时
 			pause = (hand.specialTy_ != SSS::TyNil);
+			//有三同花顺/三同花/三顺子时
+			//pause = ((hand.specialTy_ == SSS::TyThree123) || (hand.specialTy_ == SSS::TyThree123sc));
 			//没有重复四张，有2个重复三张和3个重复二张
-// 			pause = (hand.classify.c4 == 0 &&
-// 				hand.classify.c3 >= 2 &&
-// 				hand.classify.c2 >= 3);
+			//pause = (hand.classify.c4 == 0 &&
+			//	hand.classify.c3 >= 2 &&
+			//	hand.classify.c2 >= 3);
+			if (pause) {
+				//查看所有枚举牌型
+				hand.rootEnumList->PrintEnumCards(false, TyAllBase);
+				//查看手牌枚举三墩牌型
+				hand.PrintEnumCards();
+				//查看重复牌型和散牌
+				hand.classify.PrintCardList();
+				printf("--- *** c = %d %s\n\n\n\n", c, hand.StringSpecialTy().c_str());
+			}
 		}
 	}
 
@@ -3109,8 +3409,10 @@ namespace S13S {
 			//一副手牌
 			CGameLogic::PrintCardList(cards, n);
 			//手牌牌型分析
-			int c = g.AnalyseHandCards(cards, n, 20, hand);
-			//查看手牌枚举墩牌型
+			int c = g.AnalyseHandCards(cards, n, 5, hand);
+			//查看所有枚举牌型
+			hand.rootEnumList->PrintEnumCards(false, TyAllBase);
+			//查看手牌枚举三墩牌型
 			hand.PrintEnumCards();
 			//查看重复牌型和散牌
 			hand.classify.PrintCardList();
@@ -3121,51 +3423,6 @@ namespace S13S {
 		}
 	}
 	
-	//src与dst牌型相同的情况下比大小，且牌数必须相同
-	int CGameLogic::CompareCards(uint8_t const* src, uint8_t const* dst, int n, HandTy ty) {
-		switch (ty) {
-		case Ty32: {
-			//葫芦牌型比较三张的大小(中间的牌)
-			return GetCardPoint(src[2]) > GetCardPoint(dst[2]);
-		}
-		default: {
-			uint8_t psrc[MaxSZ] = { 0 }, pdst[MaxSZ] = { 0 };
-			memcpy(psrc, src, n);
-			memcpy(pdst, dst, n);
-			CGameLogic::SortCards(psrc, n, false, true, true);
-			CGameLogic::SortCards(pdst, n, false, true, true);
-			//牌型相同按顺序比点，先将src/dst按照牌点升序排
-			for (int i = n - 1; i >= 0; --i) {
-				uint8_t p0 = GetCardPoint(psrc[i]);
-				uint8_t p1 = GetCardPoint(pdst[i]);
-				if (p0 != p1) {
-					return p0 - p1;
-				}
-			}
-			//点数相同按顺序比花色
-			//for (int i = n - 1; i >= 0; --i) {
-			//	uint8_t c0 = GetCardColor(src[i]);
-			//	uint8_t c1 = GetCardColor(dst[i]);
-			//	if (c0 != c1) {
-			//		return c0 - c1;
-			//	}
-			//}
-			break;
-		}
-		}		
-		return 0;
-	}
-
-	//玩家手牌类型
-	HandTy CGameLogic::GetHandCardsType(handinfo_t& hand, DunTy dt)
-	{
-		if (hand.specialTy_ != TyNil) {
-			return hand.specialTy_;
-		}
-		//EnumList& dun = hand.dun[dt];
-
-	}
-
 #if 0
 	//从src中抽取连续n张牌到dst中
 	//src uint8_t* 牌源

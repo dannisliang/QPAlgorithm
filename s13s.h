@@ -53,11 +53,11 @@ namespace S13S {
 		Ty20,			//对子(一对)：除了两张值相同的牌外没有其它牌型
 		Ty22,			//两对：两个对子加上一张单牌
 		Ty30,			//三条：除了三张值相同的牌外没有其它牌型
-		Ty123,			//顺子：花色不同的连续五张牌(10JQKA最大，A2345最小)
+		Ty123,			//顺子：花色不同的连续五张牌(A2345仅小于10JQKA)
 		Tysc,			//同花：花色相同的五张牌，非顺子
 		Ty32,			//葫芦：一组三条加上一组对子
 		Ty40,			//铁支：除了四张值相同的牌外没有其它牌型
-		Ty123sc,		//同花顺：花色相同的连续五张牌
+		Ty123sc,		//同花顺：花色相同的连续五张牌(A2345仅小于10JQKA)
 		////// 特殊牌型
 		TyThreesc,		//三同花：三墩均是同一花色的牌型
 		TyThree123,		//三顺子：三墩均是顺子的牌型
@@ -214,9 +214,9 @@ namespace S13S {
 			//返回下一个游标
 			bool GetNextCursor(int& cursor);
 			//打印指定枚举牌型
-			void PrintEnumCards(HandTy ty = TyAllBase);
+			void PrintEnumCards(bool reverse/* = false*/, HandTy ty/* = TyAllBase*/);
 			//打印指定枚举牌型
-			void PrintEnumCards(std::string const& name, HandTy ty, std::vector<std::vector<uint8_t>> const& src);
+			void PrintEnumCards(std::string const& name, HandTy ty, std::vector<std::vector<uint8_t>> const& src, bool reverse);
 			//打印游标处枚举牌型
 			void PrintCursorEnumCards();
 			//打印游标处枚举牌型
@@ -373,8 +373,8 @@ namespace S13S {
 			std::vector<EnumList::TraverseTreeNode> leafList;
 		};
 	public:
-		//src与dst牌型相同的情况下比大小，且牌数必须相同
-		static int CompareCards(uint8_t const* src, uint8_t const* dst, int n, HandTy ty);
+		//牌型相同的src与dst比大小，牌数相同
+		static int CompareCards(uint8_t const* src, uint8_t const* dst, int n, bool clr, HandTy ty);
 		//玩家手牌类型
 		static HandTy GetHandCardsType(handinfo_t& hand, DunTy dt);
 	public:
