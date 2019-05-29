@@ -2501,12 +2501,12 @@ namespace S13S {
 				}
 			}
 		}
-		hand.CalcHandCardsType(src, len, info);
+		hand.CalcHandCardsType(src, len);
 		return c;
 	}
 	
 	//确定手牌牌型
-	void CGameLogic::handinfo_t::CalcHandCardsType(uint8_t const* src, int len, classify_t& info) {
+	void CGameLogic::handinfo_t::CalcHandCardsType(uint8_t const* src, int len) {
 		
 		//叶子节点(头墩)/子节点(中墩)/根节点(尾墩)
 		int cursorLeaf = 0, cursorChild = 0, cursorRoot = 0;
