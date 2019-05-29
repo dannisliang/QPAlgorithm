@@ -1668,10 +1668,11 @@ namespace S13S {
 		{
 			//同花色n张连续牌
 			int c = 0;
-			static int const MaxSZ = 500;
+			static int const MaxSZ = 1500;
 			std::vector<uint8_t> const* psrc[MaxSZ] = { 0 };
 			for (std::vector<std::vector<uint8_t>>::const_iterator it = dst0_.begin();
 				it != dst0_.end(); ++it) {
+				assert(c < MaxSZ);
 				psrc[c++] = &*it;
 			}
 			//psrc组与组之间按牌值降序排列(从大到小)
@@ -1685,10 +1686,11 @@ namespace S13S {
 		{
 			//非同花n张连续牌
 			int c = 0;
-			static int const MaxSZ = 500;
+			static int const MaxSZ = 1500;
 			std::vector<uint8_t> const* psrc[MaxSZ] = { 0 };
 			for (std::vector<std::vector<uint8_t>>::const_iterator it = dst1_.begin();
 				it != dst1_.end(); ++it) {
+				assert(c < MaxSZ);
 				psrc[c++] = &*it;
 			}
 			//psrc组与组之间按牌值降序排列(从大到小)
@@ -1702,10 +1704,11 @@ namespace S13S {
 		{
 			//同花n张非连续牌
 			int c = 0;
-			static int const MaxSZ = 500;
+			static int const MaxSZ = 1500;
 			std::vector<uint8_t> const* psrc[MaxSZ] = { 0 };
 			for (std::vector<std::vector<uint8_t>>::const_iterator it = dstc_.begin();
 				it != dstc_.end(); ++it) {
+				assert(c < MaxSZ);
 				psrc[c++] = &*it;
 			}
 			//psrc组与组之间按牌值降序排列(从大到小)
@@ -1939,6 +1942,7 @@ namespace S13S {
 			Ptr psrc[MaxSZ] = { 0 };
 			c = 0;
 			for (int i = 0; i < n; ++i) {
+				assert(c < MaxSZ);
 				psrc[c++] = &src[i];
 			}
 			//葫芦牌型组牌规则，三张尽量取最大(不同的手牌，三张决定了葫芦之间的大小)，对子取值越小，对其余组牌干扰越小
@@ -2049,6 +2053,7 @@ namespace S13S {
 			Ptr psrc[MaxSZ] = { 0 };
 			c = 0;
 			for (int i = 0; i < n; ++i) {
+				assert(c < MaxSZ);
 				psrc[c++] = &src[i];
 			}
 			//psrc组与组之间按牌值降序排列(从大到小)
@@ -2210,6 +2215,7 @@ namespace S13S {
 			Ptr psrc[MaxSZ] = { 0 };
 			c = 0;
 			for (int i = 0; i < n; ++i) {
+				assert(c < MaxSZ);
 				psrc[c++] = &src[i];
 			}
 			//psrc组与组之间按牌值降序排列(从大到小)
@@ -2318,6 +2324,7 @@ namespace S13S {
 			Ptr psrc[MaxSZ] = { 0 };
 			c = 0;
 			for (int i = 0; i < n; ++i) {
+				assert(c < MaxSZ);
 				psrc[c++] = &src[i];
 			}
 			//psrc组与组之间按牌值降序排列(从大到小)
@@ -3380,7 +3387,7 @@ namespace S13S {
 			//	hand.classify.c2 >= 3);
 			if (pause) {
 				//查看所有枚举牌型
-				hand.rootEnumList->PrintEnumCards(false, TyAllBase);
+				hand.rootEnumList->PrintEnumCards(false, Ty123sc);
 				//查看手牌枚举三墩牌型
 				hand.PrintEnumCards();
 				//查看重复牌型和散牌
@@ -3411,7 +3418,7 @@ namespace S13S {
 			//手牌牌型分析
 			int c = g.AnalyseHandCards(cards, n, 5, hand);
 			//查看所有枚举牌型
-			hand.rootEnumList->PrintEnumCards(false, TyAllBase);
+			hand.rootEnumList->PrintEnumCards(false, Ty123sc);
 			//查看手牌枚举三墩牌型
 			hand.PrintEnumCards();
 			//查看重复牌型和散牌
