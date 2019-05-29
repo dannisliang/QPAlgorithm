@@ -480,7 +480,7 @@ namespace S13S {
 	std::string CGameLogic::StringCardType(HandTy ty) {
 		switch (ty)
 		{
-		case SanPai:	return "SanPai";
+		case Tysp:		return "Tysp";
 		case Ty20:		return "Ty20";
 		case Ty22:		return "Ty22";
 		case Ty30:		return "Ty30";
@@ -1701,6 +1701,54 @@ namespace S13S {
 		return c;
 	}
 	
+	//葫芦牌型组牌规则，三张尽量取最大(不同的手牌，三张决定了葫芦之间的大小)，对子取值越小，对其余组牌干扰越小
+	static bool As32byPointG(const uint8_t(*const a)[5], const uint8_t(*const b)[5]) {
+		//比较三张的大小(中间的牌)
+		uint8_t p0 = CGameLogic::GetCardPoint(a[0][2]);
+		uint8_t p1 = CGameLogic::GetCardPoint(b[0][2]);
+		if (p0 != p1) {
+			return p0 > p1;
+		}
+		//三张大小相同，对子取最小
+		uint8_t sp0 = CGameLogic::GetCardPoint(a[0][0]);
+		if (sp0 == p0) {
+			sp0 = CGameLogic::GetCardPoint(a[0][4]);
+		}
+		uint8_t sp1 = CGameLogic::GetCardPoint(b[0][0]);
+		if (sp1 == p1) {
+			sp1 = CGameLogic::GetCardPoint(b[0][4]);
+		}
+		return sp0 < sp1;
+	}
+	//葫芦牌型组牌规则，三张尽量取最大(不同的手牌，三张决定了葫芦之间的大小)，对子取值越小，对其余组牌干扰越小
+	static bool As32byPointL(const uint8_t(*const a)[5], const uint8_t(*const b)[5]) {
+		//比较三张的大小(中间的牌)
+		uint8_t p0 = CGameLogic::GetCardPoint(a[0][2]);
+		uint8_t p1 = CGameLogic::GetCardPoint(b[0][2]);
+		if (p0 != p1) {
+			return p0 < p1;
+		}
+		//三张大小相同，对子取最小
+		uint8_t sp0 = CGameLogic::GetCardPoint(a[0][0]);
+		if (sp0 == p0) {
+			sp0 = CGameLogic::GetCardPoint(a[0][4]);
+		}
+		uint8_t sp1 = CGameLogic::GetCardPoint(b[0][0]);
+		if (sp1 == p1) {
+			sp1 = CGameLogic::GetCardPoint(b[0][4]);
+		}
+		return sp0 > sp1;
+	}
+	//葫芦牌型组牌规则，三张尽量取最大(不同的手牌，三张决定了葫芦之间的大小)，对子取值越小，对其余组牌干扰越小
+	static void SortCardsByPoint_src32(uint8_t(**const psrc)[5], int n, bool ascend) {
+		if (ascend) {
+			std::sort(psrc, psrc + n, As32byPointL);
+		}
+		else {
+			std::sort(psrc, psrc + n, As32byPointG);
+		}
+	}
+
 	//枚举所有葫芦(一组三条加上一组对子)
 	//psrc uint8_t(**const)[4] 衔接dst4/dst3/dst2
 	//src4 uint8_t(*const)[4] 所有四张牌型牌源，c4 四张牌型数
@@ -1714,13 +1762,15 @@ namespace S13S {
 		uint8_t(*const src2)[4], int const c2,
 		std::vector<std::vector<uint8_t>>& dst) {
 		//printf("--- *** 枚举所有葫芦\n");
+		int c = 0;
+		uint8_t src[MaxEnumSZ][5] = { 0 };
 		int n = c4 + c3 + c2;
 		CFuncC fnC;
 		std::vector<std::vector<int>> vec;
 		//psrc组与组之间按牌值升序排列(从小到大)
 		//SortCards_src(psrc, n, true, true);
 		//////从n组里面选取任意2组的组合数C(n,2) //////
-		int c = fnC.FuncC(n, 2, vec);
+		/*c = */fnC.FuncC(n, 2, vec);
 		//for (int i = 0; i < n; ++i) {
 		//	PrintCardList(psrc[i][0], get_card_c(psrc[i][0], 4));
 		//}
@@ -1745,6 +1795,7 @@ namespace S13S {
 			if (c0 >= 3) {
 				//第0组取三张C(c0,3)，第1组取二张C(c1,2)
 				std::vector<std::vector<uint8_t>> v0, v1;
+				//psrc[(*it)[0]]组的牌值小于psrc[(*it)[1]]组
 				int c_0 = FuncC(c0, 3, psrc, (*it)[0], v0);
 				int c_1 = FuncC(c1, 2, psrc, (*it)[1], v1);
 				//printf("\n--- C(%d,3)=%d，C(%d,2)=%d\n", c0, c_0, c1, c_1);
@@ -1758,22 +1809,27 @@ namespace S13S {
 						v.resize(v.size() + it3->size());
 						memcpy(&v.front() + v.size(), &it3->front(), it3->size());
 #else
-						std::vector<uint8_t> v;
-						for (std::vector<uint8_t>::iterator ir = it2->begin(); ir != it2->end(); ++ir) {
-							v.push_back(*ir);
-						}
-						for (std::vector<uint8_t>::iterator ir = it3->begin(); ir != it3->end(); ++ir) {
-							v.push_back(*ir);
-						}
+						//std::vector<uint8_t> v;
+						//for (std::vector<uint8_t>::iterator ir = it2->begin(); ir != it2->end(); ++ir) {
+						//	v.push_back(*ir);
+						//}
+						//for (std::vector<uint8_t>::iterator ir = it3->begin(); ir != it3->end(); ++ir) {
+						//	v.push_back(*ir);
+						//}
+						assert(c < MaxEnumSZ);
+						assert(it2->size() + it3->size() == 5);
+						memcpy(&(src[c])[0], &it2->front(), it2->size());
+						memcpy(&(src[c++])[it2->size()], &it3->front(), it3->size());
 #endif
 						//PrintCardList(&v.front(), v.size());
-						dst.push_back(v);
+						//dst.push_back(v);
 					}
 				}
 			}
 			if (c1 >= 3) {
 				//第0组取二张C(c0,2)，第1组取三张C(c1,3)
 				std::vector<std::vector<uint8_t>> v0, v1;
+				//psrc[(*it)[0]]组的牌值小于psrc[(*it)[1]]组
 				int c_0 = FuncC(c0, 2, psrc, (*it)[0], v0);
 				int c_1 = FuncC(c1, 3, psrc, (*it)[1], v1);
 				//printf("\n--- C(%d,2)=%d，C(%d,3)=%d\n", c0, c_0, c1, c_1);
@@ -1787,25 +1843,43 @@ namespace S13S {
 						v.resize(v.size() + it3->size());
 						memcpy(&v.front() + v.size(), &it3->front(), it3->size());
 #else
-						std::vector<uint8_t> v;
-						for (std::vector<uint8_t>::iterator ir = it2->begin(); ir != it2->end(); ++ir) {
-							v.push_back(*ir);
-						}
-						for (std::vector<uint8_t>::iterator ir = it3->begin(); ir != it3->end(); ++ir) {
-							v.push_back(*ir);
-						}
+						//std::vector<uint8_t> v;
+						//for (std::vector<uint8_t>::iterator ir = it2->begin(); ir != it2->end(); ++ir) {
+						//	v.push_back(*ir);
+						//}
+						//for (std::vector<uint8_t>::iterator ir = it3->begin(); ir != it3->end(); ++ir) {
+						//	v.push_back(*ir);
+						//}
+						assert(c < MaxEnumSZ);
+						assert(it2->size() + it3->size() == 5);
+						memcpy(&(src[c])[0], &it2->front(), it2->size());
+						memcpy(&(src[c++])[it2->size()], &it3->front(), it3->size());
 #endif
 						//PrintCardList(&v.front(), v.size());
-						dst.push_back(v);
+						//dst.push_back(v);
 					}
 				}
 			}
 			//printf("\n--- *** end c=%d\n", dst.size());
 		}
-		//for (std::vector<std::vector<uint8_t>>::const_iterator it = dst.begin();
-		//	it != dst.end(); ++it) {
-		//	PrintCardList(&it->front(), it->size());
-		//}
+		
+		{
+			n = c;
+			//uint8_t(*src[6])[4] = { 0 };
+			typedef uint8_t(*Ptr)[5];
+			Ptr psrc[MaxEnumSZ] = { 0 };
+			c = 0;
+			for (int i = 0; i < n; ++i) {
+				psrc[c++] = &src[i];
+			}
+			//葫芦牌型组牌规则，三张尽量取最大(不同的手牌，三张决定了葫芦之间的大小)，对子取值越小，对其余组牌干扰越小
+			//psrc组与组之间按牌值升序排列(从小到大)
+			SortCardsByPoint_src32(psrc, n, true);
+			for (int i = 0; i < n; ++i) {
+				std::vector<uint8_t> v(&(*psrc[i])[0], &(*psrc[i])[0] + 5);
+				dst.push_back(v);
+			}
+		}
 		return dst.size();
 	}
 	
@@ -2228,6 +2302,20 @@ namespace S13S {
 		}
 		return specialTy;
 	}
+	
+	void CGameLogic::classify_t::PrintCardList() {
+		for (int i = 0; i < c4; ++i) {
+			CGameLogic::PrintCardList(&(dst4[i])[0], 4);
+		}
+		for (int i = 0; i < c3; ++i) {
+			CGameLogic::PrintCardList(&(dst3[i])[0], 3);
+		}
+		for (int i = 0; i < c2; ++i) {
+			CGameLogic::PrintCardList(&(dst2[i])[0], 2);
+		}
+		printf("---\n");
+		CGameLogic::PrintCardList(cpy, cpylen);
+	}
 
 	//手牌牌型分析(特殊牌型判断/枚举三墩组合)，算法入口 /////////
 	//src uint8_t const* 一副手牌(13张)
@@ -2260,9 +2348,8 @@ namespace S13S {
 		assert(rootEnumList != NULL);
 		hand.Reset();
 		
-		classify_t info = { 0 };
 		//枚举尾墩/5张 //////
-		EnumCards(src, len, 5, info, *rootEnumList, DunLast);
+		EnumCards(src, len, 5, hand.classify, *rootEnumList, DunLast);
 	end:
 		while (c < n) {
 			//返回一个枚举牌型及对应的余牌
@@ -2291,9 +2378,9 @@ namespace S13S {
 			//计算根节点游标掩码
 			maskRoot = cursorRoot & 0xFFFFFFFF;
 
-			classify_t info = { 0 };
+			classify_t classify = { 0 };
 			//从余牌中枚举中墩/5张 //////
-			EnumCards(psrc, lensrc, 5, info, *childEnumList, DunSecond);
+			EnumCards(psrc, lensrc, 5, classify, *childEnumList, DunSecond);
 			while (c < n) {
 				//返回一个枚举牌型及对应的余牌
 				//按同花顺/铁支/葫芦/同花/顺子/三条/两对/对子/散牌的顺序
@@ -2314,6 +2401,22 @@ namespace S13S {
 					}
 					break;
 				}
+				//跳过三墩牌组合出现倒水情况
+				{
+					//牌型不同比牌型
+					if (tyChild != tyRoot) {
+						if (tyChild > tyRoot) {
+							continue;
+						}
+					}
+					else {
+						//牌型相同从大到小比点数，葫芦牌型比较三张的大小(中间的牌)
+						if (CompareCards(&root->front(), &child->front(), child->size(), tyChild) < 0) {
+							continue;
+						}
+					}
+				}
+				
 				masks[maskRoot] = true;
 				
 				//printf("\n取中墩 = [%s] ", StringCardType(tyChild).c_str());
@@ -2335,9 +2438,9 @@ namespace S13S {
 				//计算子节点游标掩码
 				maskChild = ((cursorChild & 0xFFFFFFFF) << 32) | (cursorRoot & 0xFFFFFFFF);
 				
-				classify_t info = { 0 };
+				classify_t classify = { 0 };
 				//从余牌中枚举头墩/3张 //////
-				EnumCards(psrc2, lensrc2, 3, info, *leafEnumList, DunFirst);
+				EnumCards(psrc2, lensrc2, 3, classify, *leafEnumList, DunFirst);
 				while (c < n) {
 					//返回一个枚举牌型及对应的余牌
 					//按同花顺/铁支/葫芦/同花/顺子/三条/两对/对子/散牌的顺序
@@ -2359,6 +2462,25 @@ namespace S13S {
 						}
 						break;
 					}
+					//跳过三墩牌组合出现倒水情况
+					{
+						//牌型不同比牌型
+						if (tyLeaf != tyChild) {
+							if(tyLeaf == Ty30 || tyLeaf == Ty20) {
+								if (tyLeaf > tyChild) {
+									continue;
+								}
+							}
+						}
+						else {
+							if (tyLeaf == Ty30 || tyLeaf == Ty20) {
+								//牌型相同从大到小比点数，葫芦牌型比较三张的大小(中间的牌)
+								if (CompareCards(&child->front(), &leaf->front(), leaf->size(), tyLeaf) < 0) {
+									continue;
+								}
+							}
+						}
+					}
 					masks[maskChild] = true;
 
 					//printf("\n取头墩 = [%s] ", StringCardType(tyLeaf).c_str());
@@ -2373,7 +2495,6 @@ namespace S13S {
 					
 					//叶子节点作为叶子节点，记录头墩，中墩和尾墩，由叶子节点向上查找父节点和根节点
 					leafList.push_back(EnumList::TraverseTreeNode(leafEnumList, cursorLeaf));
-
 					if (++c >= n) {
 						goto end;
 					}
@@ -2450,7 +2571,7 @@ namespace S13S {
 					tyLeaf = leafItem.first;
 					leaf = leafItem.second;
 					assert(leaf->size() <= 3);
-					group.assign(DunFirst, tyLeaf, &leaf->front(), leaf->size());
+					//group.assign(DunFirst, tyLeaf, &leaf->front(), leaf->size());
 				}
 				//中墩
 				EnumList *nodeChild = nodeLeaf->parent_;//
@@ -2498,6 +2619,12 @@ namespace S13S {
 						}
 					}
 				}
+				//头敦非对子/非三张，整墩非三同花顺/非三顺子/非三同花，则修改头敦为乌龙
+				if (tyLeaf != Ty20 && tyLeaf != Ty30 && group.specialTy != TyThree123sc && group.specialTy != TyThree123 && group.specialTy != TyThreesc) {
+					tyLeaf = Tysp;
+				}
+				assert(leaf->size() <= 3);
+				group.assign(DunFirst, tyLeaf, &leaf->front(), leaf->size());
 				groups.push_back(group);
 				break;
 			}
@@ -2507,7 +2634,7 @@ namespace S13S {
 		if (specialTy_ != TyZZQDragon && specialTy_ != TyOneDragon &&
 			specialTy_ != Ty12Royal && specialTy_ != TyThree123sc) {
 			HandTy specialTy = TyNil;
-			if (info.c4 == 3) {
+			if (classify.c4 == 3) {
 				//三分天下(三套炸弹)
 				specialTy_ = TyThree40;
 			}
@@ -2523,19 +2650,19 @@ namespace S13S {
 				//凑一色：全是红牌(方块/红心)或黑牌(黑桃/梅花)
 				specialTy_ = specialTy;
 			}
-			else if (info.c3 == 2 && info.c2 == 3) {
+			else if (classify.c3 == 2 && classify.c2 == 3) {
 				//双怪冲三
 				specialTy_ = TyTwo3220;
 			}
-			else if (info.c3 == 4) {
+			else if (classify.c3 == 4) {
 				//四套三条(四套冲三)
 				specialTy_ = TyFour30;
 			}
-			else if (info.c2 == 5 && info.c3 == 1) {
+			else if (classify.c2 == 5 && classify.c3 == 1) {
 				//五对三条(五对冲三)
 				specialTy_ = TyFive2030;
 			}
-			else if (info.c2 == 6) {
+			else if (classify.c2 == 6) {
 				//六对半
 				specialTy_ = TySix20;
 			}
@@ -2595,7 +2722,7 @@ namespace S13S {
 				assert(c < MaxEnumSZ);
 				tree[c++] = std::make_pair<EnumItem, EnumList*>(std::make_pair(Ty20, &*it), NULL);
 			}
-			//printf("-- *** all.size = %d\n", c);
+			//printf("-- *** tree.size = %d\n", c);
 		}
 		{
 			dt_ = dt;
@@ -2677,7 +2804,7 @@ namespace S13S {
 	void CGameLogic::EnumList::PrintEnumCards(HandTy ty) {
 		switch (ty)
 		{
-		case SanPai:break;
+		case Tysp:		PrintEnumCards("乌龙", ty, *wl);		break;//乌龙
 		case Ty20:		PrintEnumCards("对子", ty, v20);		break;//对子
 		case Ty22:		PrintEnumCards("两对", ty, v22);		break;//两对
 		case Ty30:		PrintEnumCards("三条", ty, v30);		break;//三条
@@ -2713,7 +2840,7 @@ namespace S13S {
 		if (item) {
 			switch (item->first)
 			{
-			case SanPai:break;
+			case Tysp:break;
 			case Ty20:		PrintCursorEnumCards("对子", item->first, *item->second);	break;//对子
 			case Ty22:		PrintCursorEnumCards("两对", item->first, *item->second);	break;//两对
 			case Ty30:		PrintCursorEnumCards("三条", item->first, *item->second);	break;//三条
@@ -2776,7 +2903,7 @@ namespace S13S {
 		assert(dt < DunMax);
 		switch (ty_[dt])
 		{
-		case SanPai:break;
+		case Tysp:		PrintCardList("乌龙", dt, ty_[dt]);	break;//乌龙
 		case Ty20:		PrintCardList("对子", dt, ty_[dt]);	break;//对子
 		case Ty22:		PrintCardList("两对", dt, ty_[dt]);	break;//两对
 		case Ty30:		PrintCardList("三条", dt, ty_[dt]);	break;//三条
@@ -2811,25 +2938,47 @@ namespace S13S {
 		leafList.clear();
 		if (rootEnumList) {
 			rootEnumList->Release();
+			rootEnumList->Reset();
 		}
+		memset(&classify, 0, sizeof(classify_t));
 	}
 	
 	//打印全部枚举墩牌型
-	void CGameLogic::handinfo_t::PrintEnumCards() {
-		int i = 0;
-		for (std::vector<groupdun_t>::iterator it = groups.begin();
-			it != groups.end(); ++it) {
-			printf("\n--- *** --------------------------------------------------\n");
-			if (it->specialTy != TyNil) {
-				printf("--- *** 第[%d]组 %s\n", i++ + 1, StringSpecialTy(it->specialTy).c_str());
+	void CGameLogic::handinfo_t::PrintEnumCards(bool ascend) {
+		if(ascend) {
+			int i = groups.size();
+			//倒序从小到大输出
+			for (std::vector<groupdun_t>::reverse_iterator it = groups.rbegin();
+				it != groups.rend(); ++it) {
+				printf("\n--- *** --------------------------------------------------\n");
+				if (it->specialTy != TyNil) {
+					printf("--- *** 第[%d]组 %s\n", i--, StringSpecialTy(it->specialTy).c_str());
+				}
+				else {
+					printf("--- *** 第[%d]组\n", i--);
+				}
+				it->PrintCardList(DunFirst);
+				it->PrintCardList(DunSecond);
+				it->PrintCardList(DunLast);
+				printf("--- *** --------------------------------------------------\n\n");
 			}
-			else {
-				printf("--- *** 第[%d]组\n", i++ + 1);
+		}
+		else {
+			int i = 0;
+			for (std::vector<groupdun_t>::iterator it = groups.begin();
+				it != groups.end(); ++it) {
+				printf("\n--- *** --------------------------------------------------\n");
+				if (it->specialTy != TyNil) {
+					printf("--- *** 第[%d]组 %s\n", i++ + 1, StringSpecialTy(it->specialTy).c_str());
+				}
+				else {
+					printf("--- *** 第[%d]组\n", i++ + 1);
+				}
+				it->PrintCardList(DunFirst);
+				it->PrintCardList(DunSecond);
+				it->PrintCardList(DunLast);
+				printf("--- *** --------------------------------------------------\n\n");
 			}
-			it->PrintCardList(DunFirst);
-			it->PrintCardList(DunSecond);
-			it->PrintCardList(DunLast);
-			printf("--- *** --------------------------------------------------\n\n");
 		}
 	}
 	
@@ -2869,12 +3018,12 @@ namespace S13S {
 	//按照尾墩5张/中墩5张/头墩3张依次抽取枚举普通牌型
 	//src uint8_t const* 手牌余牌(13/8/3)，初始13张，按5/5/3依次抽，余牌依次为13/8/3
 	//n int 抽取n张(5/5/3) 第一次抽5张余8张，第二次抽5张余3张，第三次取余下3张抽完
-	//info classify_t& 存放分类信息(所有重复四张/三张/二张/散牌/余牌)
+	//classify classify_t& 存放分类信息(所有重复四张/三张/二张/散牌/余牌)
 	//enumList EnumList& 存放枚举墩牌型列表数据 dt DunTy 指定为第几墩
 	void CGameLogic::EnumCards(uint8_t const* src, int len,
-		int n, classify_t& info, EnumList& enumList, DunTy dt) {
-		printf("\n\n--- *** EnumCards(%d, %d) from ", len, n);
-		PrintCardList(src, len);
+		int n, classify_t& classify, EnumList& enumList, DunTy dt) {
+		//printf("\n\n--- *** EnumCards(%d, %d) from ", len, n);
+		//PrintCardList(src, len);
 		//int c4 = 0, c3 = 0, c2 = 0;
 		//所有重复四张牌型
 		//static int const size4 = 3;
@@ -2888,10 +3037,11 @@ namespace S13S {
 		//去重后的余牌/散牌
 		//uint8_t cpy[MaxSZ] = { 0 };
 		//int cpylen = 0;
-		//memset(&info, 0, sizeof(classify_t));
+		//memset(&classify, 0, sizeof(classify_t));
 		enumList.Reset();
 		//枚举墩牌型
-		EnumCards(src, len, n, info.dst4, info.c4, info.dst3, info.c3, info.dst2, info.c2, info.cpy, info.cpylen,
+		EnumCards(src, len, n, 
+			classify.dst4, classify.c4, classify.dst3, classify.c3, classify.dst2, classify.c2, classify.cpy, classify.cpylen,
 			enumList.v123sc, enumList.v123, enumList.vsc, enumList.v40, enumList.v32, enumList.v30, enumList.v22, enumList.v20);
 		//初始化牌墩
 		enumList.Init(dt);
@@ -2901,25 +3051,42 @@ namespace S13S {
 	void CGameLogic::TestEnumCards() {
 		CGameLogic g;
 		handinfo_t hand;
+		//初始化
 		g.InitCards();
+		//洗牌
 		g.ShuffleCards();
 		bool pause = false;
 		while (1) {
 			if (pause) {
 				getchar();
 			}
+			//余牌不够则重新洗牌
 			if (g.Remaining() < 13) {
 				g.ShuffleCards();
 			}
 			uint8_t cards[MaxCount] = { 0 };
+			//发牌
 			g.DealCards(MaxCount, cards);
+			//手牌排序
 			CGameLogic::SortCards(cards, MaxCount, true, true, true);
 			printf("=================================================\n\n");
- 			int c = g.AnalyseHandCards(cards, MaxCount, 20, hand);
+			//一副手牌
+			CGameLogic::PrintCardList(cards, MaxCount);
+ 			//手牌牌型分析
+			int c = g.AnalyseHandCards(cards, MaxCount, 20, hand);
+			//查看枚举葫芦牌型
+			//hand.rootEnumList->PrintEnumCards(Ty32);
+			//查看手牌枚举三墩牌型
 			hand.PrintEnumCards();
+			//查看重复牌型和散牌
+			hand.classify.PrintCardList();
 			printf("--- *** c = %d %s\n\n\n\n", c, hand.StringSpecialTy().c_str());
-			//同花顺/同花/顺子/铁支都存在时暂停
+			//有特殊牌型时暂停
 			pause = (hand.specialTy_ != SSS::TyNil);
+			//没有重复四张，有2个重复三张和3个重复二张
+// 			pause = (hand.classify.c4 == 0 &&
+// 				hand.classify.c3 >= 2 &&
+// 				hand.classify.c2 >= 3);
 		}
 	}
 
@@ -2937,9 +3104,16 @@ namespace S13S {
 			uint8_t cards[MaxCount + 10] = { 0 };
 			int n = CGameLogic::MakeCardList(lines[1], cards, MaxCount);
 			//assert(n == 13);
+			//手牌排序
 			CGameLogic::SortCards(cards, n, true, true, true);
-			int c = g.AnalyseHandCards(cards, n, 20, hand);
+			//一副手牌
+			CGameLogic::PrintCardList(cards, n);
+			//手牌牌型分析
+			int c = g.AnalyseHandCards(cards, n, 2000, hand);
+			//查看手牌枚举墩牌型
 			hand.PrintEnumCards();
+			//查看重复牌型和散牌
+			hand.classify.PrintCardList();
 			printf("--- *** c = %d %s\n\n\n\n", c, hand.StringSpecialTy().c_str());
 		}
 		else {
@@ -2947,6 +3121,41 @@ namespace S13S {
 		}
 	}
 	
+	//src与dst牌型相同的情况下比大小，且牌数必须相同
+	int CGameLogic::CompareCards(uint8_t const* src, uint8_t const* dst, int n, HandTy ty) {
+		switch (ty) {
+		case Ty32: {
+			//葫芦牌型比较三张的大小(中间的牌)
+			return GetCardPoint(src[2]) > GetCardPoint(dst[2]);
+		}
+		default: {
+			uint8_t psrc[MaxSZ] = { 0 }, pdst[MaxSZ] = { 0 };
+			memcpy(psrc, src, n);
+			memcpy(pdst, dst, n);
+			CGameLogic::SortCards(psrc, n, false, true, true);
+			CGameLogic::SortCards(pdst, n, false, true, true);
+			//牌型相同按顺序比点，先将src/dst按照牌点升序排
+			for (int i = n - 1; i >= 0; --i) {
+				uint8_t p0 = GetCardPoint(psrc[i]);
+				uint8_t p1 = GetCardPoint(pdst[i]);
+				if (p0 != p1) {
+					return p0 - p1;
+				}
+			}
+			//点数相同按顺序比花色
+			//for (int i = n - 1; i >= 0; --i) {
+			//	uint8_t c0 = GetCardColor(src[i]);
+			//	uint8_t c1 = GetCardColor(dst[i]);
+			//	if (c0 != c1) {
+			//		return c0 - c1;
+			//	}
+			//}
+			break;
+		}
+		}		
+		return 0;
+	}
+
 	//玩家手牌类型
 	HandTy CGameLogic::GetHandCardsType(handinfo_t& hand, DunTy dt)
 	{

@@ -49,7 +49,7 @@ namespace S13S {
 		////// 普通牌型
 		TyNil,
 		TyAllBase,		//所有普通牌型
-		SanPai,			//散牌(乌龙)：一墩牌不组成任何牌型
+		Tysp,			//散牌(乌龙)：一墩牌不组成任何牌型
 		Ty20,			//对子(一对)：除了两张值相同的牌外没有其它牌型
 		Ty22,			//两对：两个对子加上一张单牌
 		Ty30,			//三条：除了三张值相同的牌外没有其它牌型
@@ -246,6 +246,8 @@ namespace S13S {
 			std::vector<EnumDunCards> v22;
 			//所有对子(一对)
 			std::vector<EnumDunCards> v20;
+			//散牌/乌龙(头敦中指向Ty123sc/Ty123/Tysc中的一个)
+			std::vector<EnumDunCards> const* wl;
 		public:
 			//标识头/中/尾墩
 			DunTy dt_;
@@ -275,6 +277,7 @@ namespace S13S {
 			//去重后的余牌/散牌
 			uint8_t cpy[MaxSZ];
 			int cpylen;
+			void PrintCardList();
 		};
 		//////////////////////////////////////////////////////////////
 		//groupdun_t 一组墩(头墩&中墩&尾墩)
@@ -327,7 +330,7 @@ namespace S13S {
 		class handinfo_t {
 			friend class CGameLogic;
 		public:
-			handinfo_t() :rootEnumList(NULL), specialTy_(TyNil), chairID(-1), current(0) {
+			handinfo_t() :rootEnumList(NULL), specialTy_(TyNil), chairID(-1), current(0), classify({ 0 }) {
 				Reset();
 			}
 			~handinfo_t() {
@@ -340,19 +343,21 @@ namespace S13S {
 			void Init();
 			void Reset();
 			//打印全部枚举墩牌型
-			void PrintEnumCards();
+			void PrintEnumCards(bool ascend = true);
 			//返回特殊牌型字符串
 			std::string StringSpecialTy();
 			//返回特殊牌型字符串
 			static std::string StringSpecialTy(HandTy specialTy);
 		protected:
 			//确定手牌牌型
-			void CalcHandCardsType(uint8_t const* src, int len, classify_t& info);
+			void CalcHandCardsType(uint8_t const* src, int len);
 		public:
 			//玩家座椅ID
 			int chairID;
 			//特殊牌型
 			HandTy specialTy_;
+			//手牌重复牌型
+			classify_t classify;
 			//根节点：初始枚举所有牌型列表
 			EnumList *rootEnumList;
 			//当前选择groups中的第几组优先
@@ -368,6 +373,8 @@ namespace S13S {
 			std::vector<EnumList::TraverseTreeNode> leafList;
 		};
 	public:
+		//src与dst牌型相同的情况下比大小，且牌数必须相同
+		static int CompareCards(uint8_t const* src, uint8_t const* dst, int n, HandTy ty);
 		//玩家手牌类型
 		static HandTy GetHandCardsType(handinfo_t& hand, DunTy dt);
 	public:
@@ -387,10 +394,10 @@ namespace S13S {
 		//按照尾墩5张/中墩5张/前墩3张依次抽取枚举普通牌型
 		//src uint8_t const* 手牌余牌(13/8/3)，初始13张，按5/5/3依次抽，余牌依次为13/8/3
 		//n int 抽取n张(5/5/3) 第一次抽5张余8张，第二次抽5张余3张，第三次取余下3张抽完
-		//info classify_t& 存放分类信息(所有重复四张/三张/二张/散牌/余牌)
+		//classify classify_t& 存放分类信息(所有重复四张/三张/二张/散牌/余牌)
 		//enumList EnumList& 存放枚举墩牌型列表数据 dt DunTy 指定为第几墩
 		static void EnumCards(uint8_t const* src, int len,
-			int n, classify_t& info, EnumList& enumList, DunTy dt);
+			int n, classify_t& classify, EnumList& enumList, DunTy dt);
 		//按照尾墩5张/中墩5张/头墩3张依次抽取枚举普通牌型
 		//src uint8_t const* 手牌余牌(13/8/3)，初始13张，按5/5/3依次抽，余牌依次为13/8/3
 		//n int 抽取n张(5/5/3) 第一次抽5张余8张，第二次抽5张余3张，第三次取余下3张抽完
