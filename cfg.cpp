@@ -18,7 +18,7 @@
 #include "cfg.h"
 
 //按行读取文件
-void readFile(char const* filename, std::vector<string>& lines, char const* skip) {
+void readFile(char const* filename, std::vector<std::string>& lines, char const* skip) {
 #if 1
 	{
 		FILE* fp = fopen(filename, "r");

@@ -171,14 +171,14 @@ namespace S13S {
 		static uint8_t get_card_colorcol(uint8_t const* cards, int n, CardColor clr);
 	private:
 		//拆分字符串"♦A ♦3 ♥3 ♥4 ♦5 ♣5 ♥5 ♥6 ♣7 ♥7 ♣9 ♣10 ♣J"
-		static void CardsBy(string const& strcards, std::vector<string>& vec);
+		static void CardsBy(std::string const& strcards, std::vector<std::string>& vec);
 		//字串构造牌"♦A"->0x01
-		static uint8_t MakeCardBy(string const& name);
+		static uint8_t MakeCardBy(std::string const& name);
 		//生成n张牌<-"♦A ♦3 ♥3 ♥4 ♦5 ♣5 ♥5 ♥6 ♣7 ♥7 ♣9 ♣10 ♣J"
-		static void MakeCardList(std::vector<string> const& vec, uint8_t *cards, int size);
+		static void MakeCardList(std::vector<std::string> const& vec, uint8_t *cards, int size);
 	public:
 		//生成n张牌<-"♦A ♦3 ♥3 ♥4 ♦5 ♣5 ♥5 ♥6 ♣7 ♥7 ♣9 ♣10 ♣J"
-		static int MakeCardList(string const& strcards, uint8_t *cards, int size);
+		static int MakeCardList(std::string const& strcards, uint8_t *cards, int size);
 	private:
 		int8_t index_;
 		uint8_t cardsData_[MaxCardTotal];

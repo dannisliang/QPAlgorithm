@@ -76,7 +76,7 @@ namespace S13S {
 				//int j = rand() % MaxCardTotal;
 				int j = rand_r(&seed) % MaxCardTotal;
 				if (i != j) {
-					swap(cardsData_[i], cardsData_[j]);
+					std::swap(cardsData_[i], cardsData_[j]);
 				}
 			}
 		}
@@ -549,8 +549,8 @@ namespace S13S {
 	}
 
 	//拆分字符串"♦A ♦3 ♥3 ♥4 ♦5 ♣5 ♥5 ♥6 ♣7 ♥7 ♣9 ♣10 ♣J"
-	void CGameLogic::CardsBy(string const& strcards, std::vector<string>& vec) {
-		string str(strcards);
+	void CGameLogic::CardsBy(std::string const& strcards, std::vector<std::string>& vec) {
+		std::string str(strcards);
 		while (true) {
 			std::string::size_type s = str.find_first_of(' ');
 			if (-1 == s) {
@@ -565,11 +565,11 @@ namespace S13S {
 	}
 
 	//字串构造牌"♦A"->0x01
-	uint8_t CGameLogic::MakeCardBy(string const& name) {
+	uint8_t CGameLogic::MakeCardBy(std::string const& name) {
 		uint8_t color = 0, value = 0;
 		if (0 == strncmp(name.c_str(), "♠", 3)) {
 			color = Spade;
-			string str(name.substr(3, -1));
+			std::string str(name.substr(3, -1));
 			switch (str.front())
 			{
 			case 'J': value = J; break;
@@ -585,7 +585,7 @@ namespace S13S {
 		}
 		else if (0 == strncmp(name.c_str(), "♥", 3)) {
 			color = Heart;
-			string str(name.substr(3, -1));
+			std::string str(name.substr(3, -1));
 			switch (str.front())
 			{
 			case 'J': value = J; break;
@@ -601,7 +601,7 @@ namespace S13S {
 		}
 		else if (0 == strncmp(name.c_str(), "♣", 3)) {
 			color = Club;
-			string str(name.substr(3, -1));
+			std::string str(name.substr(3, -1));
 			switch (str.front())
 			{
 			case 'J': value = J; break;
@@ -617,7 +617,7 @@ namespace S13S {
 		}
 		else if (0 == strncmp(name.c_str(), "♦", 3)) {
 			color = Diamond;
-			string str(name.substr(3, -1));
+			std::string str(name.substr(3, -1));
 			switch (str.front())
 			{
 			case 'J': value = J; break;
@@ -636,17 +636,17 @@ namespace S13S {
 	}
 
 	//生成n张牌<-"♦A ♦3 ♥3 ♥4 ♦5 ♣5 ♥5 ♥6 ♣7 ♥7 ♣9 ♣10 ♣J"
-	void CGameLogic::MakeCardList(std::vector<string> const& vec, uint8_t *cards, int size) {
+	void CGameLogic::MakeCardList(std::vector<std::string> const& vec, uint8_t *cards, int size) {
 		int c = 0;
-		for (std::vector<string>::const_iterator it = vec.begin();
+		for (std::vector<std::string>::const_iterator it = vec.begin();
 			it != vec.end(); ++it) {
 			cards[c++] = MakeCardBy(it->c_str());
 		}
 	}
 	
 	//生成n张牌<-"♦A ♦3 ♥3 ♥4 ♦5 ♣5 ♥5 ♥6 ♣7 ♥7 ♣9 ♣10 ♣J"
-	int CGameLogic::MakeCardList(string const& strcards, uint8_t *cards, int size) {
-		std::vector<string> vec;
+	int CGameLogic::MakeCardList(std::string const& strcards, uint8_t *cards, int size) {
+		std::vector<std::string> vec;
 		CardsBy(strcards, vec);
 		MakeCardList(vec, cards, size);
 		return (int)vec.size();
@@ -3378,7 +3378,7 @@ namespace S13S {
  			//手牌牌型分析
 			int c = g.AnalyseHandCards(cards, MaxCount, 5, hand);
 			//有特殊牌型时
-			pause = (hand.specialTy_ != SSS::TyNil);
+			pause = (hand.specialTy_ != S13S::TyNil);
 			//有三同花顺/三同花/三顺子时
 			//pause = ((hand.specialTy_ == SSS::TyThree123) || (hand.specialTy_ == SSS::TyThree123sc));
 			//没有重复四张，有2个重复三张和3个重复二张
@@ -3400,7 +3400,7 @@ namespace S13S {
 	//枚举牌型测试
 	//filename char const* 文件读取手牌 cardsList.ini
 	void CGameLogic::TestEnumCards(char const* filename) {
-		std::vector<string> lines;
+		std::vector<std::string> lines;
 		readFile(filename, lines, ";;");
 		assert(lines.size() == 2);
 		int flag = atoi(lines[0].c_str());

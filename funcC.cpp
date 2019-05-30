@@ -149,7 +149,7 @@ void CFuncC::Test() {
 	std::vector<std::vector<int>> vec;
 	while (1) {
 		int n, k;
-		cin >> n >> k;
+		std::cin >> n >> k;
 		int c = C.FuncC(n, k, vec);
 		printf("\n%d\n", c);
 		//CFuncC::Print(vec);
