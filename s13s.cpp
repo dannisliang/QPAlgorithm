@@ -3376,7 +3376,7 @@ namespace S13S {
 			//一副手牌
 			CGameLogic::PrintCardList(cards, MaxCount);
  			//手牌牌型分析
-			int c = g.AnalyseHandCards(cards, MaxCount, 5, hand);
+			int c = CGameLogic::AnalyseHandCards(cards, MaxCount, 5, hand);
 			//有特殊牌型时
 			pause = (hand.specialTy_ != S13S::TyNil);
 			//有三同花顺/三同花/三顺子时
@@ -3416,7 +3416,7 @@ namespace S13S {
 			//一副手牌
 			CGameLogic::PrintCardList(cards, n);
 			//手牌牌型分析
-			int c = g.AnalyseHandCards(cards, n, 5, hand);
+			int c = CGameLogic::AnalyseHandCards(cards, n, 5, hand);
 			//查看所有枚举牌型
 			hand.rootEnumList->PrintEnumCards(false, Ty40);
 			//查看手牌枚举三墩牌型
@@ -3430,6 +3430,63 @@ namespace S13S {
 		}
 	}
 	
+	//玩家发牌测试
+	void  CGameLogic::TestPlayerCards() {
+		//游戏逻辑类
+		S13S::CGameLogic				g;
+		//所有玩家手牌
+		uint8_t							handCards[S13S::MaxPlayer][S13S::MaxCount];
+		//手牌牌型分析结果
+		S13S::CGameLogic::handinfo_t	handInfos[S13S::MaxPlayer];
+		//初始化
+		g.InitCards();
+		//洗牌
+		g.ShuffleCards();
+		do {
+			{
+				//给各个玩家发牌
+			restart:
+				assert(S13S::MaxPlayer <= 4);
+				//余牌不够则重新洗牌
+				if (g.Remaining() < S13S::MaxCount) {
+					g.ShuffleCards();
+				}
+				//给每个玩家发牌
+				for (int i = 0; i < S13S::MaxPlayer; ++i) {
+					if (true) {
+						if (g.Remaining() < S13S::MaxCount) {
+							//余牌不够，重新洗牌然后分发给各个玩家
+							goto restart;
+						}
+						//发牌
+						g.DealCards(S13S::MaxCount, &(handCards[i])[0]);
+					}
+				}
+			}
+			{
+				//各个玩家手牌分析
+				for (int i = 0; i < S13S::MaxPlayer; ++i) {
+					if (true) {
+						//手牌排序
+						S13S::CGameLogic::SortCards(&(handCards[i])[0], S13S::MaxCount, true, true, true);
+						printf("\n\n========================================================================\n");
+						printf("--- *** chairID = [%d]\n", i);
+						//一副手牌
+						S13S::CGameLogic::PrintCardList(&(handCards[i])[0], S13S::MaxCount);
+						//手牌牌型分析
+						int c = S13S::CGameLogic::AnalyseHandCards(&(handCards[i])[0], S13S::MaxCount, 15, handInfos[i]);
+						//查看所有枚举牌型
+						handInfos[i].rootEnumList->PrintEnumCards(false, S13S::Ty123sc);
+						//查看手牌枚举三墩牌型
+						handInfos[i].PrintEnumCards();
+						//查看重复牌型和散牌
+						handInfos[i].classify.PrintCardList();
+						printf("--- *** c = %d %s\n\n\n\n", c, handInfos[i].StringSpecialTy().c_str());
+					}
+				}
+			}
+		} while ('q' != getchar());
+	}
 #if 0
 	//从src中抽取连续n张牌到dst中
 	//src uint8_t* 牌源
