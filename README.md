@@ -16,8 +16,12 @@
 			//filename char const* 文件读取手牌 cardsList.ini
 			static void TestEnumCards(char const* filename);
 			
+			//玩家发牌测试
+			static void TestPlayerCards();
+			
 			//手牌牌型分析(特殊牌型判断/枚举三墩组合)，算法入口 /////////
 			//src uint8_t const* 一副手牌(13张)
 			//n int 最大枚举多少组墩(头墩&中墩&尾墩加起来为一组)
+			//chairID int 玩家座椅ID
 			//hand handinfo_t& 保存手牌信息
-			int AnalyseHandCards(uint8_t const* src, int len, int n, handinfo_t& hand);
+			static int AnalyseHandCards(uint8_t const* src, int len, int n, handinfo_t& hand);
