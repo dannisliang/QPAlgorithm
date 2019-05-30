@@ -3447,15 +3447,12 @@ namespace S13S {
 				//给各个玩家发牌
 			restart:
 				assert(S13S::MaxPlayer <= 4);
-				//余牌不够则重新洗牌
-				if (g.Remaining() < S13S::MaxCount) {
-					g.ShuffleCards();
-				}
 				//给每个玩家发牌
 				for (int i = 0; i < S13S::MaxPlayer; ++i) {
 					if (true) {
+						//余牌不够则重新洗牌，然后重新分发给各个玩家
 						if (g.Remaining() < S13S::MaxCount) {
-							//余牌不够，重新洗牌然后分发给各个玩家
+							g.ShuffleCards();
 							goto restart;
 						}
 						//发牌
