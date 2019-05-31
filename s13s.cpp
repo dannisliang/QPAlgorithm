@@ -20,7 +20,7 @@
 #include "funcC.h"
 #include "s13s.h"
 
-//测试proto协议
+//protobuf测试
 #include "s13s.Message.pb.h"
 #include "pb2Json.h"
 
@@ -3488,7 +3488,7 @@ namespace S13S {
 		} while ('q' != getchar());
 	}
 
-	//测试proto协议
+	//protobuf测试
 	void CGameLogic::TestProtoCards() {
 		//游戏逻辑类
 		S13S::CGameLogic				g;
@@ -3539,9 +3539,8 @@ namespace S13S {
 					}
 				}
 			}
-			//测试proto协议
+			//protobuf测试
 			{
-				//构造proto
 				for (int i = 0; i < S13S::MaxPlayer; ++i) {
 					if (true) {
 						//游戏开始，填充相关数据
