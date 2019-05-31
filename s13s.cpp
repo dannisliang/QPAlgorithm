@@ -3523,19 +3523,19 @@ namespace S13S {
 					if (true) {
 						//手牌排序
 						S13S::CGameLogic::SortCards(&(handCards[i])[0], S13S::MaxCount, true, true, true);
-						printf("\n\n========================================================================\n");
-						printf("--- *** chairID = [%d]\n", i);
+						//printf("\n\n========================================================================\n");
+						//printf("--- *** chairID = [%d]\n", i);
 						//一副手牌
-						S13S::CGameLogic::PrintCardList(&(handCards[i])[0], S13S::MaxCount);
+						//S13S::CGameLogic::PrintCardList(&(handCards[i])[0], S13S::MaxCount);
 						//手牌牌型分析
 						int c = S13S::CGameLogic::AnalyseHandCards(&(handCards[i])[0], S13S::MaxCount, 3, handInfos[i]);
 						//查看所有枚举牌型
-						handInfos[i].rootEnumList->PrintEnumCards(false, S13S::Ty123sc);
+						//handInfos[i].rootEnumList->PrintEnumCards(false, S13S::Ty123sc);
 						//查看手牌枚举三墩牌型
-						handInfos[i].PrintEnumCards();
+						//handInfos[i].PrintEnumCards();
 						//查看重复牌型和散牌
-						handInfos[i].classify.PrintCardList();
-						printf("--- *** c = %d %s\n\n\n\n", c, handInfos[i].StringSpecialTy().c_str());
+						//handInfos[i].classify.PrintCardList();
+						//printf("--- *** c = %d %s\n\n\n\n", c, handInfos[i].StringSpecialTy().c_str());
 					}
 				}
 			}
@@ -3543,6 +3543,16 @@ namespace S13S {
 			{
 				for (int i = 0; i < S13S::MaxPlayer; ++i) {
 					if (true) {
+						printf("\n\n========================================================================\n");
+						printf("--- *** chairID = [%d]\n", i);
+						//一副手牌
+						S13S::CGameLogic::PrintCardList(&(handCards[i])[0], S13S::MaxCount);
+						//查看重复牌型和散牌
+						handInfos[i].classify.PrintCardList();
+						//查看所有枚举牌型
+						handInfos[i].rootEnumList->PrintEnumCards(false, S13S::Ty123sc);
+						//查看手牌枚举三墩牌型
+						handInfos[i].PrintEnumCards();
 						//游戏开始，填充相关数据
 						s13s::CMD_S_GameStart reqdata;
 						//一副手牌
@@ -3551,6 +3561,7 @@ namespace S13S {
 						handcards->set_cards(&(handCards[i])[0], S13S::MaxCount);
 						//标记手牌特殊牌型
 						handcards->set_specialty(handInfos[i].specialTy_);
+						int j = 0;
 						for (std::vector<S13S::CGameLogic::groupdun_t>::iterator it = handInfos[i].groups.begin();
 							it != handInfos[i].groups.end(); ++it) {
 							//枚举几组最优墩
@@ -3560,6 +3571,7 @@ namespace S13S {
 							//总体对应特殊牌型
 							group->set_specialty(it->specialTy);
 							//[0]头敦(3)/[1]中墩(5)/[2]尾墩(5)
+							printf("第[%d]组\t=>>\t", j++ + 1);
 							{
 								//[0]头敦(3)
 								s13s::DunData* dun0 = group->add_duns();
@@ -3571,7 +3583,7 @@ namespace S13S {
 								dun0->set_c(it->c[S13S::DunFirst]);
 								//墩牌数据(头敦3张)
 								dun0->set_cards(&(it->dun[S13S::DunFirst])[0], it->c[S13S::DunFirst]);
-								printf("dun[0] c:=%d\n", it->c[S13S::DunFirst]);
+								printf("dun[0] c:=%d\t", it->c[S13S::DunFirst]);
 								//[1]中墩(5)
 								s13s::DunData* dun1 = group->add_duns();
 								//标记0-头/1-中/2-尾
@@ -3582,7 +3594,7 @@ namespace S13S {
 								dun1->set_c(it->c[S13S::DunSecond]);
 								//墩牌数据(中墩5张)
 								dun1->set_cards(&(it->dun[S13S::DunSecond])[0], it->c[S13S::DunSecond]);
-								printf("dun[1] c:=%d\n", it->c[S13S::DunSecond]);
+								printf("dun[1] c:=%d\t", it->c[S13S::DunSecond]);
 								//[2]尾墩(5)
 								s13s::DunData* dun2 = group->add_duns();
 								//标记0-头/1-中/2-尾
@@ -3593,7 +3605,7 @@ namespace S13S {
 								dun2->set_c(it->c[S13S::DunLast]);
 								//墩牌数据(尾墩5张)
 								dun2->set_cards(&(it->dun[S13S::DunLast])[0], it->c[S13S::DunLast]);
-								printf("dun[2] c:=%d\n\n\n", it->c[S13S::DunLast]);
+								printf("dun[2] c:=%d\n\n", it->c[S13S::DunLast]);
 							}
 						}
 						{
@@ -3618,6 +3630,7 @@ namespace S13S {
 							//反序列化
 							s13s::CMD_S_GameStart rspdata;
 							rspdata.ParseFromArray(data, len);
+							delete[] data;
 							//转换json格式
 							std::string jsonstr;
 							PB2JSON::Pb2Json::PbMsg2JsonStr(rspdata, jsonstr, true);
@@ -3633,12 +3646,14 @@ namespace S13S {
 							//反序列化
 							s13s::CMD_S_GameStart rspdata;
 							rspdata.ParseFromArray(data, len);
+							delete[] data;
 							//转换json格式
 							std::string jsonstr;
 							PB2JSON::Pb2Json::PbMsg2JsonStr(rspdata, jsonstr, true);
 							printf("\n--- *** %s\n", typeName.c_str());
 							printf("%s\n\n", jsonstr.c_str());
 						}
+						printf("--- *** chairID = [%d] c = %d %s\n\n\n\n", i, handInfos[i].groups.size(), handInfos[i].StringSpecialTy().c_str());
 					}
 				}
 			}
