@@ -1,0 +1,80 @@
+{
+    "handCards": {
+        "cards": "!\u0012D5&'GH*:L=M",
+        "groups": [
+            {
+                "duns": [
+                    {
+                        "c": 3,
+                        "cards": "!&'",
+                        "id": 0,
+                        "ty": 2
+                    },
+                    {
+                        "c": 2,
+                        "cards": ":*",
+                        "id": 1,
+                        "ty": 3
+                    },
+                    {
+                        "c": 5,
+                        "cards": "DGHLM",
+                        "id": 2,
+                        "ty": 7
+                    }
+                ],
+                "specialTy": 0,
+                "start": 2
+            },
+            {
+                "duns": [
+                    {
+                        "c": 3,
+                        "cards": "!'*",
+                        "id": 0,
+                        "ty": 2
+                    },
+                    {
+                        "c": 2,
+                        "cards": "M=",
+                        "id": 1,
+                        "ty": 3
+                    },
+                    {
+                        "c": 5,
+                        "cards": "D5&GH",
+                        "id": 2,
+                        "ty": 6
+                    }
+                ],
+                "specialTy": 0,
+                "start": 2
+            },
+            {
+                "duns": [
+                    {
+                        "c": 2,
+                        "cards": ":*",
+                        "id": 0,
+                        "ty": 3
+                    },
+                    {
+                        "c": 2,
+                        "cards": "M=",
+                        "id": 1,
+                        "ty": 3
+                    },
+                    {
+                        "c": 5,
+                        "cards": "D5&'H",
+                        "id": 2,
+                        "ty": 6
+                    }
+                ],
+                "specialTy": 0,
+                "start": 2
+            }
+        ],
+        "specialTy": 0
+    }
+}

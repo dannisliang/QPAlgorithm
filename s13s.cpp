@@ -20,6 +20,10 @@
 #include "funcC.h"
 #include "s13s.h"
 
+//测试proto协议
+#include "s13s.Message.pb.h"
+#include "pb2Json.h"
+
 namespace S13S {
 
 	//一副扑克(52张)
@@ -3174,7 +3178,7 @@ namespace S13S {
 	//打印指定墩牌型
 	void CGameLogic::groupdun_t::PrintCardList(std::string const& name, DunTy dt, HandTy ty) {
 		printf("--- *** 第[%d]墩 - %s[%s]：", dt + 1, name.c_str(), StringCardType(ty).c_str());
-		CGameLogic::PrintCardList(&(dun[dt])[0], 5, true);
+		CGameLogic::PrintCardList(&(dun[dt])[0], c[dt], true);
 	}
 
 	//初始化
@@ -3483,6 +3487,165 @@ namespace S13S {
 			}
 		} while ('q' != getchar());
 	}
+
+	//测试proto协议
+	void CGameLogic::TestProtoCards() {
+		//游戏逻辑类
+		S13S::CGameLogic				g;
+		//所有玩家手牌
+		uint8_t							handCards[S13S::MaxPlayer][S13S::MaxCount];
+		//手牌牌型分析结果
+		S13S::CGameLogic::handinfo_t	handInfos[S13S::MaxPlayer];
+		//初始化
+		g.InitCards();
+		//洗牌
+		g.ShuffleCards();
+		do {
+			{
+				//给各个玩家发牌
+			restart:
+				assert(S13S::MaxPlayer <= 4);
+				for (int i = 0; i < S13S::MaxPlayer; ++i) {
+					if (true) {
+						//余牌不够则重新洗牌，然后重新分发给各个玩家
+						if (g.Remaining() < S13S::MaxCount) {
+							g.ShuffleCards();
+							goto restart;
+						}
+						//发牌
+						g.DealCards(S13S::MaxCount, &(handCards[i])[0]);
+					}
+				}
+			}
+			{
+				//各个玩家手牌分析
+				for (int i = 0; i < S13S::MaxPlayer; ++i) {
+					if (true) {
+						//手牌排序
+						S13S::CGameLogic::SortCards(&(handCards[i])[0], S13S::MaxCount, true, true, true);
+						printf("\n\n========================================================================\n");
+						printf("--- *** chairID = [%d]\n", i);
+						//一副手牌
+						S13S::CGameLogic::PrintCardList(&(handCards[i])[0], S13S::MaxCount);
+						//手牌牌型分析
+						int c = S13S::CGameLogic::AnalyseHandCards(&(handCards[i])[0], S13S::MaxCount, 3, handInfos[i]);
+						//查看所有枚举牌型
+						handInfos[i].rootEnumList->PrintEnumCards(false, S13S::Ty123sc);
+						//查看手牌枚举三墩牌型
+						handInfos[i].PrintEnumCards();
+						//查看重复牌型和散牌
+						handInfos[i].classify.PrintCardList();
+						printf("--- *** c = %d %s\n\n\n\n", c, handInfos[i].StringSpecialTy().c_str());
+					}
+				}
+			}
+			//测试proto协议
+			{
+				//构造proto
+				for (int i = 0; i < S13S::MaxPlayer; ++i) {
+					if (true) {
+						//游戏开始，填充相关数据
+						s13s::CMD_S_GameStart reqdata;
+						//一副手牌
+						s13s::HandCards* handcards = reqdata.mutable_handcards();
+						//一副13张手牌
+						handcards->set_cards(&(handCards[i])[0], S13S::MaxCount);
+						//标记手牌特殊牌型
+						handcards->set_specialty(handInfos[i].specialTy_);
+						for (std::vector<S13S::CGameLogic::groupdun_t>::iterator it = handInfos[i].groups.begin();
+							it != handInfos[i].groups.end(); ++it) {
+							//枚举几组最优墩
+							s13s::GroupDunData* group = handcards->add_groups();
+							//从哪墩开始的
+							group->set_start(it->start);
+							//总体对应特殊牌型
+							group->set_specialty(it->specialTy);
+							//[0]头敦(3)/[1]中墩(5)/[2]尾墩(5)
+							{
+								//[0]头敦(3)
+								s13s::DunData* dun0 = group->add_duns();
+								//标记0-头/1-中/2-尾
+								dun0->set_id(S13S::DunFirst);
+								//墩对应普通牌型
+								dun0->set_ty(it->ty_[S13S::DunFirst]);
+								//墩对应牌数c(3/5/5)
+								dun0->set_c(it->c[S13S::DunFirst]);
+								//墩牌数据(头敦3张)
+								dun0->set_cards(&(it->dun[S13S::DunFirst])[0], it->c[S13S::DunFirst]);
+								printf("dun[0] c:=%d\n", it->c[S13S::DunFirst]);
+								//[1]中墩(5)
+								s13s::DunData* dun1 = group->add_duns();
+								//标记0-头/1-中/2-尾
+								dun1->set_id(S13S::DunSecond);
+								//墩对应普通牌型
+								dun1->set_ty(it->ty_[S13S::DunSecond]);
+								//墩对应牌数c(3/5/5)
+								dun1->set_c(it->c[S13S::DunSecond]);
+								//墩牌数据(中墩5张)
+								dun1->set_cards(&(it->dun[S13S::DunSecond])[0], it->c[S13S::DunSecond]);
+								printf("dun[1] c:=%d\n", it->c[S13S::DunSecond]);
+								//[2]尾墩(5)
+								s13s::DunData* dun2 = group->add_duns();
+								//标记0-头/1-中/2-尾
+								dun2->set_id(S13S::DunLast);
+								//墩对应普通牌型
+								dun2->set_ty(it->ty_[S13S::DunLast]);
+								//墩对应牌数c(3/5/5)
+								dun2->set_c(it->c[S13S::DunLast]);
+								//墩牌数据(尾墩5张)
+								dun2->set_cards(&(it->dun[S13S::DunLast])[0], it->c[S13S::DunLast]);
+								printf("dun[2] c:=%d\n\n\n", it->c[S13S::DunLast]);
+							}
+						}
+						{
+							//序列化std::string
+							std::string data = reqdata.SerializeAsString();
+							std::string const& typeName = reqdata.GetTypeName();//typename
+							//反序列化
+							s13s::CMD_S_GameStart rspdata;
+							rspdata.ParseFromArray(data.c_str(), data.length());
+							//转换json格式
+							std::string jsonstr;
+							PB2JSON::Pb2Json::PbMsg2JsonStr(rspdata, jsonstr, true);
+							printf("\n--- *** %s\n", typeName.c_str());
+							printf("%s\n\n", jsonstr.c_str());
+						}
+						{
+							//序列化bytes
+							int len = reqdata.ByteSize();//len
+							uint8_t *data = new uint8_t[len];
+							reqdata.SerializeToArray(data, len);//data
+							std::string const& typeName = reqdata.GetTypeName();//typename
+							//反序列化
+							s13s::CMD_S_GameStart rspdata;
+							rspdata.ParseFromArray(data, len);
+							//转换json格式
+							std::string jsonstr;
+							PB2JSON::Pb2Json::PbMsg2JsonStr(rspdata, jsonstr, true);
+							printf("\n--- *** %s\n", typeName.c_str());
+							printf("%s\n\n", jsonstr.c_str());
+						}
+						{
+							//序列化bytes
+							int len = reqdata.ByteSize();//len
+							uint8_t *data = new uint8_t[len];
+							reqdata.SerializeWithCachedSizesToArray(data);//data
+							std::string const& typeName = reqdata.GetTypeName();//typename
+							//反序列化
+							s13s::CMD_S_GameStart rspdata;
+							rspdata.ParseFromArray(data, len);
+							//转换json格式
+							std::string jsonstr;
+							PB2JSON::Pb2Json::PbMsg2JsonStr(rspdata, jsonstr, true);
+							printf("\n--- *** %s\n", typeName.c_str());
+							printf("%s\n\n", jsonstr.c_str());
+						}
+					}
+				}
+			}
+		} while ('q' != getchar());
+	}
+
 #if 0
 	//从src中抽取连续n张牌到dst中
 	//src uint8_t* 牌源

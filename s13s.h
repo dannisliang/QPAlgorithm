@@ -380,6 +380,8 @@ namespace S13S {
 		static void TestEnumCards(char const* filename);
 		//玩家发牌测试
 		static void TestPlayerCards();
+		//测试proto协议
+		static void TestProtoCards();
 	public:
 		//手牌牌型分析(特殊牌型判断/枚举三墩组合)，算法入口 /////////
 		//src uint8_t const* 一副手牌(13张)

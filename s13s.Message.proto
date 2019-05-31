@@ -1,0 +1,58 @@
+syntax = "proto2";
+package s13s;
+
+////////////////////////////////////////////////////////////////////////////////
+//牌数据
+message CardData
+{
+	repeated bytes cards = 1;
+}
+////////////////////////////////////////////////////////////////////////////////
+//单墩数据
+message DunData 
+{
+	required int32 id		 = 1; //标记0-头/1-中/2-尾
+	required int32 ty        = 2; //墩对应普通牌型
+	required int32 c         = 3; //墩对应牌数c(3/5/5)
+	required bytes cards     = 4; //墩牌数据(头敦3张牌/中墩和尾墩各5张牌)
+}
+////////////////////////////////////////////////////////////////////////////////
+//一组墩(含头墩/中墩/尾墩)
+message GroupDunData
+{
+	required int32 start     = 1; //从哪墩开始的
+	required int32 specialTy = 2; //总体对应特殊牌型
+	repeated DunData duns    = 3; //[0]头敦(3)/[1]中墩(5)/[2]尾墩(5)
+}
+////////////////////////////////////////////////////////////////////////////////
+//手牌数据
+message HandCards 
+{
+	required bytes cards         = 1; //一副13张手牌
+	required int32 specialTy     = 2; //标记手牌特殊牌型
+	repeated GroupDunData groups = 3; //枚举几组最优墩(开元或得胜是给了3组，这里给了5组)
+}
+////////////////////////////////////////////////////////////////////////////////
+//游戏开始
+message CMD_S_GameStart
+{
+	required HandCards handCards  = 1;	//手牌数据
+};
+////////////////////////////////////////////////////////////////////////////////
+//手动摆牌
+message CMD_S_ManualCards
+{
+	repeated bytes v123sc  = 1; //所有同花色五张/三张连续牌(五张/三张同花顺)
+	repeated bytes v40	  = 2; //所有铁支(四张)
+	repeated bytes v32	  = 3; //所有葫芦(一组三条加上一组对子)
+	repeated bytes vsc	  = 4; //所有同花五张/三张非连续牌(五张/三张同花)
+	repeated bytes v123	  = 5; //所有非同花五张/三张连续牌(五张/三张顺子)
+	repeated bytes v30	  = 6; //所有三条(三张)
+	repeated bytes v22	  = 7; //所有两对(两个对子)
+	repeated bytes v20	  = 8; //所有对子(一对)
+}
+////////////////////////////////////////////////////////////////////////////////
+//手动摆牌
+message CMD_C_ManualCards
+{
+}
