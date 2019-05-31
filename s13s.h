@@ -188,9 +188,9 @@ namespace S13S {
 		class EnumTree {
 		public:
 			//枚举牌，枚举一墩牌，5/3张
-			typedef std::vector<uint8_t>                DunCards;
+			typedef std::vector<uint8_t>                CardData;
 			//枚举项，pair<牌型，一墩牌>
-			typedef std::pair<HandTy, DunCards const*>  EnumItem;
+			typedef std::pair<HandTy, CardData const*>  EnumItem;
 			//树节点，pair<枚举项，子枚举项列表>
 			typedef std::pair<EnumItem, EnumTree*>      TreeNode;
 			//树节点，pair<树节点指针，对应树枚举项>
@@ -227,27 +227,27 @@ namespace S13S {
 			EnumTree*& GetCursorChild(int cursor);
 			//返回下一个枚举牌型(从大到小返回)
 			bool GetNextEnumItem(uint8_t const* src, int len,
-				DunCards const*& dst, HandTy& ty,
+				CardData const*& dst, HandTy& ty,
 				int& cursor, uint8_t *cpy, int& cpylen);
 		public:
 			//所有同花色五张/三张连续牌(五张/三张同花顺)
-			std::vector<DunCards> v123sc;
+			std::vector<CardData> v123sc;
 			//所有铁支(四张)
-			std::vector<DunCards> v40;
+			std::vector<CardData> v40;
 			//所有葫芦(一组三条加上一组对子)
-			std::vector<DunCards> v32;
+			std::vector<CardData> v32;
 			//所有同花五张/三张非连续牌(五张/三张同花)
-			std::vector<DunCards> vsc;
+			std::vector<CardData> vsc;
 			//所有非同花五张/三张连续牌(五张/三张顺子)
-			std::vector<DunCards> v123;
+			std::vector<CardData> v123;
 			//所有三条(三张)
-			std::vector<DunCards> v30;
+			std::vector<CardData> v30;
 			//所有两对(两个对子)
-			std::vector<DunCards> v22;
+			std::vector<CardData> v22;
 			//所有对子(一对)
-			std::vector<DunCards> v20;
+			std::vector<CardData> v20;
 			//散牌/乌龙(头敦中指向Ty123sc/Ty123/Tysc中的一个)
-			std::vector<DunCards> const* wl;
+			std::vector<CardData> const* wl;
 		public:
 			//标识头/中/尾墩
 			DunTy dt_;

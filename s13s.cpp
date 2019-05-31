@@ -2574,7 +2574,7 @@ namespace S13S {
 		//叶子节点(头墩)/子节点(中墩)/根节点(尾墩)
 		int cursorLeaf = 0, cursorChild = 0, cursorRoot = 0;
 		HandTy tyLeaf = TyNil, tyChild = TyNil, tyRoot = TyNil;
-		EnumTree::DunCards const *leaf = NULL, *child = NULL, *root = NULL;
+		EnumTree::CardData const *leaf = NULL, *child = NULL, *root = NULL;
 		
 		//防止重复添加
 		std::map<int64_t, bool> masks;
@@ -2759,7 +2759,7 @@ namespace S13S {
 		//叶子节点(头墩)/子节点(中墩)/根节点(尾墩)
 		int cursorLeaf = 0, cursorChild = 0, cursorRoot = 0;
 		HandTy tyLeaf = TyNil, tyChild = TyNil, tyRoot = TyNil;
-		EnumTree::DunCards const *leaf = NULL, *child = NULL, *root = NULL;
+		EnumTree::CardData const *leaf = NULL, *child = NULL, *root = NULL;
 
 		//至尊青龙/一条龙(十三水)/十二皇族
 		specialTy_ = CheckDragonRoyal(src, len);
@@ -2923,49 +2923,49 @@ namespace S13S {
 		{
 			c = 0;
 			//同花顺
-			for (std::vector<DunCards>::const_iterator it = v123sc.begin();
+			for (std::vector<CardData>::const_iterator it = v123sc.begin();
 				it != v123sc.end(); ++it) {
 				assert(c < MaxEnumSZ);
 				tree[c++] = std::make_pair<EnumItem, EnumTree*>(std::make_pair(Ty123sc, &*it), NULL);
 			}
 			//铁支
-			for (std::vector<DunCards>::const_iterator it = v40.begin();
+			for (std::vector<CardData>::const_iterator it = v40.begin();
 				it != v40.end(); ++it) {
 				assert(c < MaxEnumSZ);
 				tree[c++] = std::make_pair<EnumItem, EnumTree*>(std::make_pair(Ty40, &*it), NULL);
 			}
 			//葫芦
-			for (std::vector<DunCards>::const_iterator it = v32.begin();
+			for (std::vector<CardData>::const_iterator it = v32.begin();
 				it != v32.end(); ++it) {
 				assert(c < MaxEnumSZ);
 				tree[c++] = std::make_pair<EnumItem, EnumTree*>(std::make_pair(Ty32, &*it), NULL);
 			}
 			//同花
-			for (std::vector<DunCards>::const_iterator it = vsc.begin();
+			for (std::vector<CardData>::const_iterator it = vsc.begin();
 				it != vsc.end(); ++it) {
 				assert(c < MaxEnumSZ);
 				tree[c++] = std::make_pair<EnumItem, EnumTree*>(std::make_pair(Tysc, &*it), NULL);
 			}
 			//顺子
-			for (std::vector<DunCards>::const_iterator it = v123.begin();
+			for (std::vector<CardData>::const_iterator it = v123.begin();
 				it != v123.end(); ++it) {
 				assert(c < MaxEnumSZ);
 				tree[c++] = std::make_pair<EnumItem, EnumTree*>(std::make_pair(Ty123, &*it), NULL);
 			}
 			//三条
-			for (std::vector<DunCards>::const_iterator it = v30.begin();
+			for (std::vector<CardData>::const_iterator it = v30.begin();
 				it != v30.end(); ++it) {
 				assert(c < MaxEnumSZ);
 				tree[c++] = std::make_pair<EnumItem, EnumTree*>(std::make_pair(Ty30, &*it), NULL);
 			}
 			//两对
-			for (std::vector<DunCards>::const_iterator it = v22.begin();
+			for (std::vector<CardData>::const_iterator it = v22.begin();
 				it != v22.end(); ++it) {
 				assert(c < MaxEnumSZ);
 				tree[c++] = std::make_pair<EnumItem, EnumTree*>(std::make_pair(Ty22, &*it), NULL);
 			}
 			//对子
-			for (std::vector<DunCards>::const_iterator it = v20.begin();
+			for (std::vector<CardData>::const_iterator it = v20.begin();
 				it != v20.end(); ++it) {
 				assert(c < MaxEnumSZ);
 				tree[c++] = std::make_pair<EnumItem, EnumTree*>(std::make_pair(Ty20, &*it), NULL);
@@ -3128,7 +3128,7 @@ namespace S13S {
 
 	//返回下一个枚举牌型(从大到小返回)
 	bool CGameLogic::EnumTree::GetNextEnumItem(uint8_t const* src, int len,
-		CGameLogic::EnumTree::DunCards const*& dst, HandTy& ty,
+		CGameLogic::EnumTree::CardData const*& dst, HandTy& ty,
 		int& cursor, uint8_t *cpy, int& cpylen) {
 		ty = TyNil;
 		cpylen = 0;
@@ -3137,7 +3137,7 @@ namespace S13S {
 			dst = tree[cursor_].first.second;
 			cursor = cursor_;
 			for (int i = 0; i < len; ++i) {
-				DunCards::const_iterator it;
+				CardData::const_iterator it;
 				for (it = dst->begin(); it != dst->end(); ++it) {
 					if (src[i] == *it) {
 						//src[i]在dst中存在了
@@ -3447,7 +3447,6 @@ namespace S13S {
 				//给各个玩家发牌
 			restart:
 				assert(S13S::MaxPlayer <= 4);
-				//给每个玩家发牌
 				for (int i = 0; i < S13S::MaxPlayer; ++i) {
 					if (true) {
 						//余牌不够则重新洗牌，然后重新分发给各个玩家
