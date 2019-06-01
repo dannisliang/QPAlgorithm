@@ -23,8 +23,24 @@
 			//protobuf测试
 			static void TestProtoCards();
 			
+			//手动摆牌测试
+			static void TestManualCards();
+			
 			//手牌牌型分析(特殊牌型判断/枚举三墩组合)，算法入口 /////////
 			//src uint8_t const* 一副手牌(13张)
 			//n int 最大枚举多少组墩(头墩&中墩&尾墩加起来为一组)
 			//hand handinfo_t& 保存手牌信息
 			static int AnalyseHandCards(uint8_t const* src, int len, int n, handinfo_t& hand);
+			
+			//单墩牌型判断(3/5张牌)
+			//dt DunTy 指定为第几墩
+			//src uint8_t const* 一墩5张或3张的牌
+			static HandTy GetDunCardHandTy(DunTy dt, uint8_t const* src, int len);
+			
+			//按照尾墩5张/中墩5张/头敦3张依次抽取枚举普通牌型
+			//src uint8_t const* 手牌余牌(13/8/3)，初始13张，按5/5/3依次抽，余牌依次为13/8/3
+			//n int 抽取n张(5/5/3) 第一次抽5张余8张，第二次抽5张余3张，第三次取余下3张抽完
+			//classify classify_t& 存放分类信息(所有重复四张/三张/二张/散牌/余牌)
+			//enumList EnumTree& 存放枚举墩牌型列表数据 dt DunTy 指定为第几墩
+			static void EnumCards(uint8_t const* src, int len,
+				int n, classify_t& classify, EnumTree& enumList, DunTy dt);

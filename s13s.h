@@ -280,11 +280,42 @@ namespace S13S {
 			void PrintCardList();
 		};
 		//////////////////////////////////////////////////////////////
+		//dundata_t 单墩数据
+		struct dundata_t {
+			dundata_t() :dt_(DunNil), ty_({ TyNil }), c(0), cards({ 0 }) {
+			}
+			void assign(DunTy dt, HandTy ty, uint8_t const* src, int len) {
+				assert(len > 0);
+				assert(dt > DunNil && dt < DunMax);
+				(dt == DunFirst) ? assert(len <= 3) : assert(len <= 5);
+				assert(dt_ == DunNil && ty_ == TyNil && c == 0);
+				dt_ = dt; ty_ = ty; c = len;
+				memcpy(cards, src, len);
+			}
+			void Reset() {
+				dt_ = DunNil;
+				ty_ = TyNil;
+				c = 0;
+				memset(cards, 0, sizeof(uint8_t) * 5);
+			}
+			//标记0-头/1-中/2-尾
+			DunTy dt_;
+			//墩对应普通牌型
+			HandTy ty_;
+			//墩对应牌数c(3/5/5)
+			uint8_t c;
+			//墩牌数据(头敦3/中墩5/尾墩5)
+			uint8_t cards[5];
+		};
+		//////////////////////////////////////////////////////////////
 		//groupdun_t 一组墩(头墩&中墩&尾墩)
 		class groupdun_t {
 		public:
-			groupdun_t() :specialTy(TyNil), ty_({ TyNil }), c({ 0 }), start(DunNil) {
-				memset(dun, 0, sizeof(uint8_t)*DunMax * 5);
+			groupdun_t() :specialTy(TyNil), start(DunNil) {
+				//memset(duns, 0, sizeof(dundata_t)*DunMax);
+				for (int i = DunFirst; i <= DunLast; ++i) {
+					duns[i].Reset();
+				}
 			}
 			groupdun_t(groupdun_t const& ref) {
 				copy(ref);
@@ -295,9 +326,7 @@ namespace S13S {
 			groupdun_t& copy(groupdun_t const& ref) {
 				start = ref.start;
 				specialTy = ref.specialTy;
-				memcpy(ty_, ref.ty_, sizeof(HandTy)*DunMax);
-				memcpy(dun, ref.dun, sizeof(uint8_t)*DunMax * 5);
-				memcpy(c, ref.c, sizeof(uint8_t)*DunMax);
+				memcpy(duns, ref.duns, sizeof(dundata_t)*DunMax);
 				return *this;
 			}
 			void assign(DunTy dt, HandTy ty, uint8_t const* src, int len) {
@@ -305,9 +334,7 @@ namespace S13S {
 				if (start == DunNil || start < dt) {
 					start = dt;
 				}
-				ty_[(int)(dt)] = ty;
-				memcpy(&(dun[dt])[0], src, len);
-				c[(int)(dt)] = len;
+				duns[(int)(dt)].assign(dt, ty, src, len);
 			}
 			//打印指定墩牌型
 			void PrintCardList(DunTy dt);
@@ -318,12 +345,8 @@ namespace S13S {
 			DunTy start;
 			//总体对应特殊牌型
 			HandTy specialTy;
-			//各墩对应普通牌型
-			HandTy ty_[DunMax];
-			//每墩对应牌数c[i]
-			uint8_t c[DunMax];
 			//[0]头敦(3)/[1]中墩(5)/[2]尾墩(5)
-			uint8_t dun[DunMax][5];
+			dundata_t duns[DunMax];
 		};
 		//////////////////////////////////////////////////////////////
 		//handinfo_t 一副手牌信息
@@ -332,6 +355,7 @@ namespace S13S {
 		public:
 			handinfo_t() :rootEnumList(NULL), specialTy_(TyNil), chairID(-1), current(0), classify({ 0 }) {
 				Reset();
+				memset(duns_select, 0, sizeof(dundata_t)*DunMax);
 			}
 			~handinfo_t() {
 				if (rootEnumList) {
@@ -352,6 +376,19 @@ namespace S13S {
 			//确定手牌牌型
 			void CalcHandCardsType(uint8_t const* src, int len);
 		public:
+			//给指定墩(头/中/尾墩)选择一组牌(头敦3/中墩5/尾墩5)
+			//dt DunTy 指定为哪墩
+			//src uint8_t const* 选择的一组牌(5张或3张)
+			//len int 3/5张，头敦3张/中墩5张/尾墩5张
+			//ty HandTy 指定墩牌型
+			void SelectAs(DunTy dt, uint8_t const* src, int len, HandTy ty);
+			//返回组墩后剩余牌
+			//src uint8_t const* 一副手牌13张
+			//cpy uint8_t *cpy 组墩后剩余牌 cpylen int& 余牌数量
+			void GetLeftCards(uint8_t const* src, int len, uint8_t *cpy, int& cpylen);
+			//返回组墩总牌数
+			int GetCardCount() { return duns_select[DunFirst].c + duns_select[DunSecond].c + duns_select[DunLast].c; }
+		public:
 			//玩家座椅ID
 			int chairID;
 			//特殊牌型
@@ -364,6 +401,8 @@ namespace S13S {
 			int current;
 			//枚举几组最优墩，指向EnumTree::TraverseTreeNode成员
 			std::vector<groupdun_t> groups;
+			//[0]头敦(3)/[1]中墩(5)/[2]尾墩(5)
+			dundata_t duns_select[DunMax];
 			//叶子节点列表
 			//枚举几组最优墩(头墩&中墩&尾墩加起来为一组)，由叶子节点向上往根节点遍历
 			//叶子节点 dt_ 成员判断当前是从哪墩节点开始，
@@ -382,6 +421,8 @@ namespace S13S {
 		static void TestPlayerCards();
 		//protobuf测试
 		static void TestProtoCards();
+		//手动摆牌测试
+		static void TestManualCards();
 	public:
 		//手牌牌型分析(特殊牌型判断/枚举三墩组合)，算法入口 /////////
 		//src uint8_t const* 一副手牌(13张)
@@ -389,19 +430,20 @@ namespace S13S {
 		//chairID int 玩家座椅ID
 		//hand handinfo_t& 保存手牌信息
 		static int AnalyseHandCards(uint8_t const* src, int len, int n, handinfo_t& hand);
-	public:
+		//单墩牌型判断(3/5张牌)
+		//dt DunTy 指定为第几墩
+		//src uint8_t const* 一墩5张或3张的牌
+		static HandTy GetDunCardHandTy(DunTy dt, uint8_t const* src, int len);
 		//牌型相同的src与dst比大小，牌数相同
 		static int CompareCards(uint8_t const* src, uint8_t const* dst, int n, bool clr, HandTy ty);
-		//玩家手牌类型
-		static HandTy GetHandCardsType(handinfo_t& hand, DunTy dt);
-	private:
-		//按照尾墩5张/中墩5张/前墩3张依次抽取枚举普通牌型
+		//按照尾墩5张/中墩5张/头敦3张依次抽取枚举普通牌型
 		//src uint8_t const* 手牌余牌(13/8/3)，初始13张，按5/5/3依次抽，余牌依次为13/8/3
 		//n int 抽取n张(5/5/3) 第一次抽5张余8张，第二次抽5张余3张，第三次取余下3张抽完
 		//classify classify_t& 存放分类信息(所有重复四张/三张/二张/散牌/余牌)
 		//enumList EnumTree& 存放枚举墩牌型列表数据 dt DunTy 指定为第几墩
 		static void EnumCards(uint8_t const* src, int len,
 			int n, classify_t& classify, EnumTree& enumList, DunTy dt);
+	private:
 		//按照尾墩5张/中墩5张/头墩3张依次抽取枚举普通牌型
 		//src uint8_t const* 手牌余牌(13/8/3)，初始13张，按5/5/3依次抽，余牌依次为13/8/3
 		//n int 抽取n张(5/5/3) 第一次抽5张余8张，第二次抽5张余3张，第三次取余下3张抽完

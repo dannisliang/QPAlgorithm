@@ -50,9 +50,13 @@ message CMD_S_ManualCards
 	repeated bytes v30	  = 6; //所有三条(三张)
 	repeated bytes v22	  = 7; //所有两对(两个对子)
 	repeated bytes v20	  = 8; //所有对子(一对)
+	optional int32 dt     = 9; //客户端选择了哪一墩，标记0-头/1-中/2-尾
+	optional int32 ty     = 10;//墩对应牌型
 }
 ////////////////////////////////////////////////////////////////////////////////
 //手动摆牌
 message CMD_C_ManualCards
 {
+	optional int32 dt    = 1; //客户端选择了哪一墩，标记0-头/1-中/2-尾
+	optional bytes cards = 2; //客户端选择了哪些牌，作为一墩，后端用余牌再计算枚举
 }
