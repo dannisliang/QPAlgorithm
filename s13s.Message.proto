@@ -30,7 +30,7 @@ message HandCards
 {
 	required bytes cards         = 1; //一副13张手牌
 	required int32 specialTy     = 2; //标记手牌特殊牌型
-	repeated GroupDunData groups = 3; //枚举几组最优墩(开元或得胜是给了3组，这里给了5组)
+	repeated GroupDunData groups = 3; //枚举几组最优墩(开元或德胜是给了3组，这里给了5组)
 }
 ////////////////////////////////////////////////////////////////////////////////
 //游戏开始
