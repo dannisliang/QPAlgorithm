@@ -2788,11 +2788,11 @@ namespace S13S {
 					root = leafItem.second;
 					group.assign(DunLast, tyRoot, &root->front(), root->size());
 				}
-				groups.push_back(group);
 				//组墩后剩余牌/散牌
 				uint8_t cpy[MaxSZ] = { 0 };
 				int cpylen = 0, offset = 0;
 				CGameLogic::GetLeftCards(src, len, group.duns, cpy, cpylen);
+				//PrintCardList(cpy, cpylen, true);
 				//补充尾墩
 				{
 					int c = group.NeedAppendC(DunLast);
@@ -2815,6 +2815,7 @@ namespace S13S {
 					offset += 5;
 					assert(offset == cpylen);
 				}
+				groups.push_back(group);
 				break;
 			}
 			case DunSecond: {
