@@ -3163,8 +3163,12 @@ namespace S13S {
 	//src uint8_t const* 选择的一组牌(5张或3张)
 	//len int 3/5张，头敦3张/中墩5张/尾墩5张
 	//ty HandTy 指定墩牌型
-	void CGameLogic::handinfo_t::SelectAs(DunTy dt, uint8_t const* src, int len, HandTy ty) {
+	bool CGameLogic::handinfo_t::SelectAs(DunTy dt, uint8_t const* src, int len, HandTy ty) {
+		if (duns_select[dt].GetCount() > 0) {
+			return false;
+		}
 		duns_select[dt].assign(dt, ty, src, len);
+		return true;
  	}
 	
 	//返回组墩后剩余牌
@@ -3821,7 +3825,9 @@ namespace S13S {
 							//对客户端选择的一组牌，进行单墩牌型判断
 							S13S::HandTy ty = S13S::CGameLogic::GetDunCardHandTy(dt, cards, len);
 							//给指定墩(头/中/尾墩)选择一组牌
-							handInfos[i].SelectAs(dt, cards, len, ty);
+							if (!handInfos[i].SelectAs(dt, cards, len, ty)) {
+								continue;
+							}
 							//返回组墩后剩余牌
 							uint8_t cpy[S13S::MaxSZ] = { 0 };
 							int cpylen = 0;

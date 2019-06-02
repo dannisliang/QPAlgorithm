@@ -298,6 +298,7 @@ namespace S13S {
 				c = 0;
 				memset(cards, 0, sizeof(uint8_t) * 5);
 			}
+			inline int GetCount() { return c; }
 			//标记0-头/1-中/2-尾
 			DunTy dt_;
 			//墩对应普通牌型
@@ -381,7 +382,7 @@ namespace S13S {
 			//src uint8_t const* 选择的一组牌(5张或3张)
 			//len int 3/5张，头敦3张/中墩5张/尾墩5张
 			//ty HandTy 指定墩牌型
-			void SelectAs(DunTy dt, uint8_t const* src, int len, HandTy ty);
+			bool SelectAs(DunTy dt, uint8_t const* src, int len, HandTy ty);
 			//返回组墩后剩余牌
 			//src uint8_t const* 一副手牌13张
 			//cpy uint8_t *cpy 组墩后剩余牌 cpylen int& 余牌数量
