@@ -2852,12 +2852,6 @@ namespace S13S {
 						offset += c;
 					}
 				}
-				//补充头墩
-				{
-					assert(offset < cpylen);
-					group.assign(DunFirst, Tysp, &cpy[offset], 3);
-					offset += 3;
-				}
 				//补充中墩
 				{
 					int c = group.needC(DunSecond);
@@ -2865,8 +2859,14 @@ namespace S13S {
 						assert(offset < cpylen);
 						group.append(DunSecond, &cpy[offset], c);
 						offset += c;
-						assert(offset == cpylen);
 					}
+				}
+				//补充头墩
+				{
+					assert(offset < cpylen);
+					group.assign(DunFirst, Tysp, &cpy[offset], 3);
+					offset += 3;
+					assert(offset == cpylen);
 				}
 				groups.push_back(group);
 				break;
@@ -2947,21 +2947,21 @@ namespace S13S {
 						offset += c;
 					}
 				}
-				//补充头墩
-				{
-					int c = group.needC(DunFirst);
-					if (c > 0) {
-						assert(offset < cpylen);
-						group.append(DunFirst, &cpy[offset], c);
-						offset += c;
-					}
-				}
 				//补充中墩
 				{
 					int c = group.needC(DunSecond);
 					if (c > 0) {
 						assert(offset < cpylen);
 						group.append(DunSecond, &cpy[offset], c);
+						offset += c;
+					}
+				}
+				//补充头墩
+				{
+					int c = group.needC(DunFirst);
+					if (c > 0) {
+						assert(offset < cpylen);
+						group.append(DunFirst, &cpy[offset], c);
 						offset += c;
 						assert(offset == cpylen);
 					}
