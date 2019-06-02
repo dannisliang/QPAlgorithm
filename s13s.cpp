@@ -2581,8 +2581,8 @@ namespace S13S {
 		EnumTree::CardData const *leaf = NULL, *child = NULL, *root = NULL;
 		
 		//防止重复添加
-		std::map<int64_t, bool> masks;
-		int64_t maskRoot = 0, maskChild = 0;
+		std::map<uint64_t, bool> masks;
+		uint64_t maskRoot = 0, maskChild = 0;
 
 		hand.Init();
 		//叶子节点列表
