@@ -2645,6 +2645,7 @@ namespace S13S {
 					if (it == masks.end()) {
 						//根节点为叶子节点，记录尾墩
 						leafList.push_back(EnumTree::TraverseTreeNode(rootEnumList, cursorRoot));
+						masks[maskRoot] = true;
 // 						if (++c >= n) {
 // 							goto entry_root_iterator;
 // 						}
@@ -2668,7 +2669,6 @@ namespace S13S {
 						}
 					}
 				}
-				masks[maskRoot] = true;
 				
 				//printf("\n取中墩 = [%s] ", StringCardType(tyChild).c_str());
 				//PrintCardList(&child->front(), child->size());
@@ -2708,6 +2708,8 @@ namespace S13S {
 						if (it == masks.end()) {
 							//子节点为叶子节点，记录中墩和尾墩，由叶子节点向上查找根节点
 							leafList.push_back(EnumTree::TraverseTreeNode(childEnumList, cursorChild));
+							masks[maskChild] = true;
+							masks[maskRoot] = true;
 // 							if (++c >= n) {
 // 								goto entry_root_iterator;
 // 							}
@@ -2735,7 +2737,6 @@ namespace S13S {
 							}
 						}
 					}
-					//masks[maskChild] = true;
 
 					//printf("\n取头墩 = [%s] ", StringCardType(tyLeaf).c_str());
 					//PrintCardList(&leaf->front(), leaf->size());
@@ -2775,13 +2776,15 @@ namespace S13S {
 						if (it == masks.end()) {
 							//子节点为叶子节点，记录中墩和尾墩，由叶子节点向上查找根节点
 							leafList.push_back(EnumTree::TraverseTreeNode(childEnumList, cursorChild));
+							masks[maskChild] = true;
+							masks[maskRoot] = true;
 						}
-						masks[maskChild] = true;
 					}
 					else {
 						//叶子节点作为叶子节点，记录头墩，中墩和尾墩，由叶子节点向上查找父节点和根节点
 						leafList.push_back(EnumTree::TraverseTreeNode(leafEnumList, cursorLeaf));
 						masks[maskChild] = true;
+						masks[maskRoot] = true;
 					}
 					//if (++c >= n) {
 					//	goto entry_root_iterator;
