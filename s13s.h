@@ -466,13 +466,13 @@ namespace S13S {
 		//enumList EnumTree& 存放枚举墩牌型列表数据 dt DunTy 指定为第几墩
 		static void EnumCards(uint8_t const* src, int len,
 			int n, classify_t& classify, EnumTree& enumList, DunTy dt);
-	private:
 		//返回组墩后剩余牌/散牌
 		//src uint8_t const* 一副手牌13张
 		//duns dundata_t const* 一组墩(头/中/尾墩)
 		//cpy uint8_t *cpy 组墩后剩余牌 cpylen int& 余牌数量
 		static void GetLeftCards(uint8_t const* src, int len,
 			dundata_t const* duns, uint8_t *cpy, int& cpylen);
+	private:
 		//按照尾墩5张/中墩5张/头墩3张依次抽取枚举普通牌型
 		//src uint8_t const* 手牌余牌(13/8/3)，初始13张，按5/5/3依次抽，余牌依次为13/8/3
 		//n int 抽取n张(5/5/3) 第一次抽5张余8张，第二次抽5张余3张，第三次取余下3张抽完
