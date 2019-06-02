@@ -247,7 +247,7 @@ namespace S13S {
 			//所有对子(一对)
 			std::vector<CardData> v20;
 			//散牌/乌龙(头敦中指向Ty123sc/Ty123/Tysc中的一个)
-			std::vector<CardData> const* wl;
+			std::vector<CardData> const* vsp;
 		public:
 			//标识头/中/尾墩
 			DunTy dt_;
@@ -391,7 +391,7 @@ namespace S13S {
 		public:
 			//玩家座椅ID
 			int chairID;
-			//特殊牌型
+			//优先特殊牌型
 			HandTy specialTy_;
 			//手牌重复牌型
 			classify_t classify;

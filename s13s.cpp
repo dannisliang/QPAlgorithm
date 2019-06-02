@@ -3056,7 +3056,7 @@ namespace S13S {
 	void CGameLogic::EnumTree::PrintEnumCards(bool reverse, HandTy ty) {
 		switch (ty)
 		{
-		case Tysp:		PrintEnumCards("乌龙", ty, *wl, reverse);		break;//乌龙
+		case Tysp:		PrintEnumCards("乌龙", ty,*vsp, reverse);		break;//乌龙
 		case Ty20:		PrintEnumCards("对子", ty, v20, reverse);		break;//对子
 		case Ty22:		PrintEnumCards("两对", ty, v22, reverse);		break;//两对
 		case Ty30:		PrintEnumCards("三条", ty, v30, reverse);		break;//三条
@@ -3358,8 +3358,8 @@ namespace S13S {
 		assert(dt > DunNil && dt < DunMax);
 		dt == DunFirst ? assert(len == 3) : assert(len == 5);
 		classify_t classify = { 0 };
-		CGameLogic::EnumTree enumList;
-		CGameLogic::EnumCards(src, len, len, classify, enumList, dt);
+		EnumTree enumList;
+		EnumCards(src, len, len, classify, enumList, dt);
 		if (enumList.v123sc.size() > 0) {
 			ty = Ty123sc;//同花顺
 		}
