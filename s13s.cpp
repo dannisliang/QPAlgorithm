@@ -2792,6 +2792,7 @@ namespace S13S {
 				uint8_t cpy[MaxSZ] = { 0 };
 				int cpylen = 0, offset = 0;
 				CGameLogic::GetLeftCards(src, len, group.duns, cpy, cpylen);
+				CGameLogic::SortCards(cpy, cpylen, false, true, true);
 				//PrintCardList(cpy, cpylen, true);
 				//补充尾墩
 				{
@@ -2843,6 +2844,7 @@ namespace S13S {
 				uint8_t cpy[MaxSZ] = { 0 };
 				int cpylen = 0, offset = 0;
 				CGameLogic::GetLeftCards(src, len, group.duns, cpy, cpylen);
+				CGameLogic::SortCards(cpy, cpylen, false, true, true);
 				//补充尾墩
 				{
 					int c = group.needC(DunLast);
@@ -2938,6 +2940,7 @@ namespace S13S {
 				uint8_t cpy[MaxSZ] = { 0 };
 				int cpylen = 0, offset = 0;
 				CGameLogic::GetLeftCards(src, len, group.duns, cpy, cpylen);
+				CGameLogic::SortCards(cpy, cpylen, false, true, true);
 				//补充尾墩
 				{
 					int c = group.needC(DunLast);
