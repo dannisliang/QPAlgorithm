@@ -2789,6 +2789,32 @@ namespace S13S {
 					group.assign(DunLast, tyRoot, &root->front(), root->size());
 				}
 				groups.push_back(group);
+				//组墩后剩余牌/散牌
+				uint8_t cpy[MaxSZ] = { 0 };
+				int cpylen = 0, offset = 0;
+				CGameLogic::GetLeftCards(src, len, group.duns, cpy, cpylen);
+				//补充尾墩
+				{
+					int c = group.NeedAppendC(DunLast);
+					if (c > 0) {
+						assert(offset < cpylen);
+						group.AppendC(DunLast, &cpy[offset], c);
+						offset += c;
+					}
+				}
+				//补充头墩
+				{
+					assert(offset < cpylen);
+					group.assign(DunFirst, Tysp, &cpy[offset], 3);
+					offset += 3;
+				}
+				//补充中墩
+				{
+					assert(offset < cpylen);
+					group.assign(DunSecond, Tysp, &cpy[offset], 5);
+					offset += 5;
+					assert(offset == cpylen);
+				}
 				break;
 			}
 			case DunSecond: {
@@ -2811,6 +2837,35 @@ namespace S13S {
 					tyRoot = rootItem.first;
 					root = rootItem.second;
 					group.assign(DunLast, tyRoot, &root->front(), root->size());
+				}
+				//组墩后剩余牌/散牌
+				uint8_t cpy[MaxSZ] = { 0 };
+				int cpylen = 0, offset = 0;
+				CGameLogic::GetLeftCards(src, len, group.duns, cpy, cpylen);
+				//补充尾墩
+				{
+					int c = group.NeedAppendC(DunLast);
+					if (c > 0) {
+						assert(offset < cpylen);
+						group.AppendC(DunLast, &cpy[offset], c);
+						offset += c;
+					}
+				}
+				//补充头墩
+				{
+					assert(offset < cpylen);
+					group.assign(DunFirst, Tysp, &cpy[offset], 3);
+					offset += 3;
+				}
+				//补充中墩
+				{
+					int c = group.NeedAppendC(DunSecond);
+					if (c > 0) {
+						assert(offset < cpylen);
+						group.AppendC(DunSecond, &cpy[offset], c);
+						offset += c;
+						assert(offset == cpylen);
+					}
 				}
 				groups.push_back(group);
 				break;
@@ -2878,6 +2933,38 @@ namespace S13S {
 				}
 				assert(leaf->size() <= 3);
 				group.assign(DunFirst, tyLeaf, &leaf->front(), leaf->size());
+				//组墩后剩余牌
+				uint8_t cpy[MaxSZ] = { 0 };
+				int cpylen = 0, offset = 0;
+				CGameLogic::GetLeftCards(src, len, group.duns, cpy, cpylen);
+				//补充尾墩
+				{
+					int c = group.NeedAppendC(DunLast);
+					if (c > 0) {
+						assert(offset < cpylen);
+						group.AppendC(DunLast, &cpy[offset], c);
+						offset += c;
+					}
+				}
+				//补充头墩
+				{
+					int c = group.NeedAppendC(DunFirst);
+					if (c > 0) {
+						assert(offset < cpylen);
+						group.AppendC(DunFirst, &cpy[offset], c);
+						offset += c;
+					}
+				}
+				//补充中墩
+				{
+					int c = group.NeedAppendC(DunSecond);
+					if (c > 0) {
+						assert(offset < cpylen);
+						group.AppendC(DunSecond, &cpy[offset], c);
+						offset += c;
+						assert(offset == cpylen);
+					}
+				}
 				groups.push_back(group);
 				break;
 			}
@@ -3165,40 +3252,18 @@ namespace S13S {
 	//len int 3/5张，头敦3张/中墩5张/尾墩5张
 	//ty HandTy 指定墩牌型
 	bool CGameLogic::handinfo_t::SelectAs(DunTy dt, uint8_t const* src, int len, HandTy ty) {
-		if (duns_select[dt].GetCount() > 0) {
+		if (duns_select[dt].GetC() > 0) {
 			return false;
 		}
 		duns_select[dt].assign(dt, ty, src, len);
 		return true;
  	}
 	
-	//返回组墩后剩余牌
+	//返回组墩后剩余牌/散牌
 	//src uint8_t const* 一副手牌13张
 	//cpy uint8_t *cpy 组墩后剩余牌 cpylen int& 余牌数量
 	void CGameLogic::handinfo_t::GetLeftCards(uint8_t const* src, int len, uint8_t *cpy, int& cpylen) {
-		cpylen = 0;
-		bool bok = false;
-		//遍历一副手牌查找当前牌
-		for (int i = 0; i < len; ++i) {
-		next:
-			if (bok) {
-				bok = false;
-				continue;
-			}
-			//遍历每一墩牌
-			for (int j = DunLast; j >= DunFirst; --j) {
-				//遍历每一墩里面的每张牌
-				for (int c = 0; c < duns_select[j].c; ++c) {
-					if (src[i] == duns_select[j].cards[c]) {
-						//src[i]在duns_select[i]中存在了
-						bok = true;
-						goto next;
-					}
-				}
-			}
-			//不存在的话添加到余牌中
-			cpy[cpylen++] = src[i];
-		}
+		CGameLogic::GetLeftCards(src, len, duns_select, cpy, cpylen);
 	}
 	
 	//打印指定墩牌型
@@ -3321,6 +3386,37 @@ namespace S13S {
 		}
 		return "";
 	}
+	
+	//返回组墩后剩余牌/散牌
+	//src uint8_t const* 一副手牌13张
+	//duns dundata_t const* 一组墩(头/中/尾墩)
+	//cpy uint8_t *cpy 组墩后剩余牌 cpylen int& 余牌数量
+	void CGameLogic::GetLeftCards(uint8_t const* src, int len,
+		dundata_t const* duns, uint8_t *cpy, int& cpylen) {
+		cpylen = 0;
+		bool bok = false;
+		//遍历一副手牌查找当前牌
+		for (int i = 0; i < len; ++i) {
+		next:
+			if (bok) {
+				bok = false;
+				continue;
+			}
+			//遍历每一墩牌
+			for (int j = DunLast; j >= DunFirst; --j) {
+				//遍历每一墩里面的每张牌
+				for (int c = 0; c < duns[j].c; ++c) {
+					if (src[i] == duns[j].cards[c]) {
+						//src[i]在duns[i]中存在了
+						bok = true;
+						goto next;
+					}
+				}
+			}
+			//不存在的话添加到余牌中
+			cpy[cpylen++] = src[i];
+		}
+	}
 
 	//按照尾墩5张/中墩5张/头墩3张依次抽取枚举普通牌型
 	//src uint8_t const* 手牌余牌(13/8/3)，初始13张，按5/5/3依次抽，余牌依次为13/8/3
@@ -3439,9 +3535,9 @@ namespace S13S {
 		g.ShuffleCards();
 		bool pause = false;
 		while (1) {
-			if (pause) {
+			//if (pause) {
 				getchar();
-			}
+			//}
 			//余牌不够则重新洗牌
 			if (g.Remaining() < 13) {
 				g.ShuffleCards();
@@ -3457,14 +3553,14 @@ namespace S13S {
  			//手牌牌型分析
 			int c = CGameLogic::AnalyseHandCards(cards, MaxCount, 5, hand);
 			//有特殊牌型时
-			pause = (hand.specialTy_ != S13S::TyNil);
+			//pause = (hand.specialTy_ != S13S::TyNil);
 			//有三同花顺/三同花/三顺子时
 			//pause = ((hand.specialTy_ == SSS::TyThree123) || (hand.specialTy_ == SSS::TyThree123sc));
 			//没有重复四张，有2个重复三张和3个重复二张
 			//pause = (hand.classify.c4 == 0 &&
 			//	hand.classify.c3 >= 2 &&
 			//	hand.classify.c2 >= 3);
-			if (pause) {
+			//if (pause) {
 				//查看所有枚举牌型
 				hand.rootEnumList->PrintEnumCards(false, Ty123sc);
 				//查看手牌枚举三墩牌型
@@ -3472,7 +3568,7 @@ namespace S13S {
 				//查看重复牌型和散牌
 				hand.classify.PrintCardList();
 				printf("--- *** c = %d %s\n\n\n\n", c, hand.StringSpecialTy().c_str());
-			}
+			//}
 		}
 	}
 

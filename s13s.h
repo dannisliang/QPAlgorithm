@@ -287,7 +287,7 @@ namespace S13S {
 			void assign(DunTy dt, HandTy ty, uint8_t const* src, int len) {
 				assert(len > 0);
 				assert(dt > DunNil && dt < DunMax);
-				(dt == DunFirst) ? assert(len <= 3) : assert(len <= 5);
+				assert(len <= ((dt == DunFirst) ? 3 : 5));
 				assert(dt_ == DunNil && ty_ == TyNil && c == 0);
 				dt_ = dt; ty_ = ty; c = len;
 				memcpy(cards, src, len);
@@ -298,7 +298,23 @@ namespace S13S {
 				c = 0;
 				memset(cards, 0, sizeof(uint8_t) * 5);
 			}
-			inline int GetCount() { return c; }
+			int NeedAppendC() {
+				switch (dt_)
+				{
+				case DunFirst: return 3 - c;
+				case DunSecond:
+				case DunLast:  return 5 - c;
+				}
+				return 0;
+			}
+			void AppendC(uint8_t const* src, int len) {
+				assert(len > 0);
+				assert(dt_ > DunNil && dt_ < DunMax);
+				assert(c + len == ((dt_ == DunFirst) ? 3 : 5));
+				memcpy(&cards[c], src, len);
+				c += len;
+			}
+			inline int GetC() { return c; }
 			//标记0-头/1-中/2-尾
 			DunTy dt_;
 			//墩对应普通牌型
@@ -336,6 +352,12 @@ namespace S13S {
 					start = dt;
 				}
 				duns[(int)(dt)].assign(dt, ty, src, len);
+			}
+			int NeedAppendC(DunTy dt) {
+				return duns[(int)(dt)].NeedAppendC();
+			}
+			void AppendC(DunTy dt, uint8_t const* src, int len) {
+				duns[(int)(dt)].AppendC(src, len);
 			}
 			//打印指定墩牌型
 			void PrintCardList(DunTy dt);
@@ -383,7 +405,7 @@ namespace S13S {
 			//len int 3/5张，头敦3张/中墩5张/尾墩5张
 			//ty HandTy 指定墩牌型
 			bool SelectAs(DunTy dt, uint8_t const* src, int len, HandTy ty);
-			//返回组墩后剩余牌
+			//返回组墩后剩余牌/散牌
 			//src uint8_t const* 一副手牌13张
 			//cpy uint8_t *cpy 组墩后剩余牌 cpylen int& 余牌数量
 			void GetLeftCards(uint8_t const* src, int len, uint8_t *cpy, int& cpylen);
@@ -445,6 +467,12 @@ namespace S13S {
 		static void EnumCards(uint8_t const* src, int len,
 			int n, classify_t& classify, EnumTree& enumList, DunTy dt);
 	private:
+		//返回组墩后剩余牌/散牌
+		//src uint8_t const* 一副手牌13张
+		//duns dundata_t const* 一组墩(头/中/尾墩)
+		//cpy uint8_t *cpy 组墩后剩余牌 cpylen int& 余牌数量
+		static void GetLeftCards(uint8_t const* src, int len,
+			dundata_t const* duns, uint8_t *cpy, int& cpylen);
 		//按照尾墩5张/中墩5张/头墩3张依次抽取枚举普通牌型
 		//src uint8_t const* 手牌余牌(13/8/3)，初始13张，按5/5/3依次抽，余牌依次为13/8/3
 		//n int 抽取n张(5/5/3) 第一次抽5张余8张，第二次抽5张余3张，第三次取余下3张抽完
