@@ -2621,7 +2621,7 @@ namespace S13S {
 			childEnumList->parentcursor_ = cursorRoot;
 			
 			//计算根节点游标掩码
-			maskRoot = cursorRoot & 0xFFFFFFFF;
+			maskRoot = (uint64_t)((cursorRoot + 1) & 0xFFFFFFFF);
 
 			classify_t classify = { 0 };
 			//从余牌中枚举中墩/5张 //////
@@ -2637,7 +2637,7 @@ namespace S13S {
 					//rootEnumList->PrintCursorEnumCards();
 					//printf("--- *** --------------------------------------------------\n");
 					
-					std::map<int64_t, bool>::iterator it = masks.find(maskRoot);
+					std::map<uint64_t, bool>::iterator it = masks.find(maskRoot);
 					if (it == masks.end()) {
 						//根节点为叶子节点，记录尾墩
 						leafList.push_back(EnumTree::TraverseTreeNode(rootEnumList, cursorRoot));
@@ -2683,7 +2683,7 @@ namespace S13S {
 				leafEnumList->parentcursor_ = cursorChild;
 				
 				//计算子节点游标掩码
-				maskChild = ((cursorChild & 0xFFFFFFFF) << 32) | (cursorRoot & 0xFFFFFFFF);
+				maskChild = (uint64_t)(((cursorChild + 1) & 0xFFFFFFFF) << 31) | (uint64_t)((cursorRoot + 1) & 0xFFFFFFFF);
 				
 				classify_t classify = { 0 };
 				//从余牌中枚举头墩/3张 //////
@@ -2699,7 +2699,7 @@ namespace S13S {
 						//rootEnumList->PrintCursorEnumCards();
 						//printf("--- *** --------------------------------------------------\n");
 						
-						std::map<int64_t, bool>::iterator it = masks.find(maskChild);
+						std::map<uint64_t, bool>::iterator it = masks.find(maskChild);
 						if (it == masks.end()) {
 							//子节点为叶子节点，记录中墩和尾墩，由叶子节点向上查找根节点
 							leafList.push_back(EnumTree::TraverseTreeNode(childEnumList, cursorChild));
