@@ -2771,13 +2771,17 @@ namespace S13S {
 					//头敦非对子/非三张，整墩非三同花顺/非三顺子/非三同花，则修改头敦为乌龙
 					if (tyLeaf != Ty20 && tyLeaf != Ty30 && specialTy_ != TyThree123sc && specialTy_ != TyThree123 && specialTy_ != TyThreesc) {
 						tyLeaf = Tysp;
-						//子节点为叶子节点，记录中墩和尾墩，由叶子节点向上查找根节点
-						//leafList.push_back(EnumTree::TraverseTreeNode(childEnumList, cursorChild));
+						std::map<uint64_t, bool>::iterator it = masks.find(maskChild);
+						if (it == masks.end()) {
+							//子节点为叶子节点，记录中墩和尾墩，由叶子节点向上查找根节点
+							leafList.push_back(EnumTree::TraverseTreeNode(childEnumList, cursorChild));
+						}
+						masks[maskChild] = true;
 					}
 					else {
-						masks[maskChild] = true;
 						//叶子节点作为叶子节点，记录头墩，中墩和尾墩，由叶子节点向上查找父节点和根节点
 						leafList.push_back(EnumTree::TraverseTreeNode(leafEnumList, cursorLeaf));
+						masks[maskChild] = true;
 					}
 					//if (++c >= n) {
 					//	goto entry_root_iterator;
