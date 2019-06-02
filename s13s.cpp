@@ -2683,7 +2683,8 @@ namespace S13S {
 				leafEnumList->parentcursor_ = cursorChild;
 				
 				//计算子节点游标掩码
-				maskChild = (uint64_t)(((cursorChild + 1) & 0xFFFFFFFF) << 31) | (uint64_t)((cursorRoot + 1) & 0xFFFFFFFF);
+				maskChild = (uint64_t)(((cursorChild + 1) & 0xFFFFFFFF) << 24) | (uint64_t)((cursorRoot + 1) & 0xFFFFFFFF);
+				//printf("cursorRoot: %d cursorChild: %d\n", cursorRoot + 1, cursorChild + 1);
 				
 				classify_t classify = { 0 };
 				//从余牌中枚举头墩/3张 //////
@@ -2749,7 +2750,7 @@ namespace S13S {
 // 					}
 					++c;
 					//重新从根节点开始迭代游标 //////
-					goto entry_root_iterator;
+					//goto entry_root_iterator;
 				}
 			}
 		}
