@@ -2769,15 +2769,16 @@ namespace S13S {
 							}
 						}
 					//}
+					//printf("--- *** %s\n", StringCardType(tyLeaf).c_str());
 					//头敦非对子/非三张，整墩非三同花顺/非三顺子/非三同花，则修改头敦为乌龙
 					if (tyLeaf != Ty20 && tyLeaf != Ty30 && specialTy_ != TyThree123sc && specialTy_ != TyThree123 && specialTy_ != TyThreesc) {
-						tyLeaf = Tysp;
 						std::map<uint64_t, bool>::iterator it = masks.find(maskChild);
 						if (it == masks.end()) {
 							//子节点为叶子节点，记录中墩和尾墩，由叶子节点向上查找根节点
 							leafList.push_back(EnumTree::TraverseTreeNode(childEnumList, cursorChild));
 							masks[maskChild] = true;
 							masks[maskRoot] = true;
+							++c;
 						}
 					}
 					else {
@@ -2785,11 +2786,11 @@ namespace S13S {
 						leafList.push_back(EnumTree::TraverseTreeNode(leafEnumList, cursorLeaf));
 						masks[maskChild] = true;
 						masks[maskRoot] = true;
+						++c;
 					}
 					//if (++c >= n) {
 					//	goto entry_root_iterator;
 					//}
-					++c;
 					//重新从根节点开始迭代游标 //////
 					//goto entry_root_iterator;
 				}
