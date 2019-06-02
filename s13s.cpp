@@ -2593,6 +2593,10 @@ namespace S13S {
 		assert(rootEnumList != NULL);
 		hand.Reset();
 		
+		//至尊青龙/一条龙(十三水)/十二皇族
+		//hand.specialTy_ = CheckDragonRoyal(src, len);
+		HandTy specialTy_ = TyNil;
+
 		//枚举尾墩/5张 //////
 		EnumCards(src, len, 5, hand.classify, *rootEnumList, DunLast);
 	entry_root_iterator:
@@ -2731,7 +2735,7 @@ namespace S13S {
 							}
 						}
 					}
-					masks[maskChild] = true;
+					//masks[maskChild] = true;
 
 					//printf("\n取头墩 = [%s] ", StringCardType(tyLeaf).c_str());
 					//PrintCardList(&leaf->front(), leaf->size());
@@ -2743,11 +2747,41 @@ namespace S13S {
 					//rootEnumList->PrintCursorEnumCards();
 					//printf("--- *** --------------------------------------------------\n");
 					
-					//叶子节点作为叶子节点，记录头墩，中墩和尾墩，由叶子节点向上查找父节点和根节点
-					leafList.push_back(EnumTree::TraverseTreeNode(leafEnumList, cursorLeaf));
-// 					if (++c >= n) {
-// 						goto entry_root_iterator;
-// 					}
+					//如果不是至尊青龙/一条龙(十三水)/十二皇族
+					//if (specialTy_ != TyZZQDragon && specialTy_ != TyOneDragon && specialTy_ != Ty12Royal) {
+						if (tyRoot == Ty123sc && tyChild == Ty123sc && tyLeaf == Ty123sc) {
+							//三同花顺
+							specialTy_ = TyThree123sc;
+						}
+						else if (tyRoot == Ty123 && tyChild == Ty123 && tyLeaf == Ty123) {
+							//如果不是同花顺
+							if (specialTy_ != TyThree123sc) {
+								//三顺子
+								specialTy_ = TyThree123;
+							}
+						}
+						else if (tyRoot == Tysc && tyChild == Tysc && tyLeaf == Tysc) {
+							//如果不是同花顺且不是三顺子
+							if (specialTy_ != TyThree123sc && specialTy_ != TyThree123) {
+								//三同花
+								specialTy_ = TyThreesc;
+							}
+						}
+					//}
+					//头敦非对子/非三张，整墩非三同花顺/非三顺子/非三同花，则修改头敦为乌龙
+					if (tyLeaf != Ty20 && tyLeaf != Ty30 && specialTy_ != TyThree123sc && specialTy_ != TyThree123 && specialTy_ != TyThreesc) {
+						tyLeaf = Tysp;
+						//子节点为叶子节点，记录中墩和尾墩，由叶子节点向上查找根节点
+						//leafList.push_back(EnumTree::TraverseTreeNode(childEnumList, cursorChild));
+					}
+					else {
+						masks[maskChild] = true;
+						//叶子节点作为叶子节点，记录头墩，中墩和尾墩，由叶子节点向上查找父节点和根节点
+						leafList.push_back(EnumTree::TraverseTreeNode(leafEnumList, cursorLeaf));
+					}
+					//if (++c >= n) {
+					//	goto entry_root_iterator;
+					//}
 					++c;
 					//重新从根节点开始迭代游标 //////
 					//goto entry_root_iterator;
@@ -2845,6 +2879,7 @@ namespace S13S {
 				int cpylen = 0, offset = 0;
 				CGameLogic::GetLeftCards(src, len, group.duns, cpy, cpylen);
 				CGameLogic::SortCards(cpy, cpylen, false, true, true);
+				//PrintCardList(cpy, cpylen, true);
 				//补充尾墩
 				{
 					int c = group.needC(DunLast);
@@ -2941,6 +2976,7 @@ namespace S13S {
 				int cpylen = 0, offset = 0;
 				CGameLogic::GetLeftCards(src, len, group.duns, cpy, cpylen);
 				CGameLogic::SortCards(cpy, cpylen, false, true, true);
+				//PrintCardList(cpy, cpylen, true);
 				//补充尾墩
 				{
 					int c = group.needC(DunLast);
