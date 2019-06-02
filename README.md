@@ -29,6 +29,7 @@
 			//手牌牌型分析(特殊牌型判断/枚举三墩组合)，算法入口 /////////
 			//src uint8_t const* 一副手牌(13张)
 			//n int 最大枚举多少组墩(头墩&中墩&尾墩加起来为一组)
+			//chairID int 玩家座椅ID
 			//hand handinfo_t& 保存手牌信息
 			static int AnalyseHandCards(uint8_t const* src, int len, int n, handinfo_t& hand);
 			
@@ -36,6 +37,13 @@
 			//dt DunTy 指定为第几墩
 			//src uint8_t const* 一墩5张或3张的牌
 			static HandTy GetDunCardHandTy(DunTy dt, uint8_t const* src, int len);
+			
+			//牌型相同的src与dst比大小，牌数相同
+			//src uint8_t const* 单墩牌(3/5张)
+			//dst uint8_t const* 单墩牌(3/5张)
+			//clr bool 是否比花色
+			//ty HandTy 比较的两单墩牌的普通牌型
+			static int CompareCards(uint8_t const* src, uint8_t const* dst, int n, bool clr, HandTy ty);
 			
 			//按照尾墩5张/中墩5张/头敦3张依次抽取枚举普通牌型
 			//src uint8_t const* 手牌余牌(13/8/3)，初始13张，按5/5/3依次抽，余牌依次为13/8/3
@@ -51,3 +59,5 @@
 			//cpy uint8_t *cpy 组墩后剩余牌 cpylen int& 余牌数量
 			static void GetLeftCards(uint8_t const* src, int len,
 				dundata_t const* duns, uint8_t *cpy, int& cpylen);
+				
+				

@@ -458,6 +458,10 @@ namespace S13S {
 		//src uint8_t const* 一墩5张或3张的牌
 		static HandTy GetDunCardHandTy(DunTy dt, uint8_t const* src, int len);
 		//牌型相同的src与dst比大小，牌数相同
+		//src uint8_t const* 单墩牌(3/5张)
+		//dst uint8_t const* 单墩牌(3/5张)
+		//clr bool 是否比花色
+		//ty HandTy 比较的两单墩牌的普通牌型
 		static int CompareCards(uint8_t const* src, uint8_t const* dst, int n, bool clr, HandTy ty);
 		//按照尾墩5张/中墩5张/头敦3张依次抽取枚举普通牌型
 		//src uint8_t const* 手牌余牌(13/8/3)，初始13张，按5/5/3依次抽，余牌依次为13/8/3

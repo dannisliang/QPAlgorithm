@@ -3492,7 +3492,11 @@ namespace S13S {
 		return ty;
 	}
 
-	//牌型相同的src与dst比大小，且牌数必须相同
+	//牌型相同的src与dst比大小，牌数相同
+	//src uint8_t const* 单墩牌(3/5张)
+	//dst uint8_t const* 单墩牌(3/5张)
+	//clr bool 是否比花色
+	//ty HandTy 比较的两单墩牌的普通牌型
 	int CGameLogic::CompareCards(uint8_t const* src, uint8_t const* dst, int n, bool clr, HandTy ty) {
 		switch (ty) {
 		case Ty32: {
@@ -3503,9 +3507,9 @@ namespace S13S {
 			uint8_t psrc[MaxSZ] = { 0 }, pdst[MaxSZ] = { 0 };
 			memcpy(psrc, src, n);
 			memcpy(pdst, dst, n);
-			CGameLogic::SortCards(psrc, n, false, true, true);
-			CGameLogic::SortCards(pdst, n, false, true, true);
-			//牌型相同按顺序比点，先将src/dst按照牌点升序排
+			SortCards(psrc, n, false, true, true);
+			SortCards(pdst, n, false, true, true);
+			//牌型相同按顺序比点，先将src/dst按牌点升序排
 			for (int i = n - 1; i >= 0; --i) {
 				uint8_t p0 = GetCardPoint(psrc[i]);
 				uint8_t p1 = GetCardPoint(pdst[i]);
