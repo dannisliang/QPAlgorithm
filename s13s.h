@@ -298,7 +298,7 @@ namespace S13S {
 				c = 0;
 				memset(cards, 0, sizeof(uint8_t) * 5);
 			}
-			int NeedAppendC() {
+			int needC() {
 				switch (dt_)
 				{
 				case DunFirst: return 3 - c;
@@ -307,7 +307,7 @@ namespace S13S {
 				}
 				return 0;
 			}
-			void AppendC(uint8_t const* src, int len) {
+			void append(uint8_t const* src, int len) {
 				assert(len > 0);
 				assert(dt_ > DunNil && dt_ < DunMax);
 				assert(c + len == ((dt_ == DunFirst) ? 3 : 5));
@@ -353,11 +353,11 @@ namespace S13S {
 				}
 				duns[(int)(dt)].assign(dt, ty, src, len);
 			}
-			int NeedAppendC(DunTy dt) {
-				return duns[(int)(dt)].NeedAppendC();
+			int needC(DunTy dt) {
+				return duns[(int)(dt)].needC();
 			}
-			void AppendC(DunTy dt, uint8_t const* src, int len) {
-				duns[(int)(dt)].AppendC(src, len);
+			void append(DunTy dt, uint8_t const* src, int len) {
+				duns[(int)(dt)].append(src, len);
 			}
 			//打印指定墩牌型
 			void PrintCardList(DunTy dt);

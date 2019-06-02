@@ -2795,10 +2795,10 @@ namespace S13S {
 				//PrintCardList(cpy, cpylen, true);
 				//补充尾墩
 				{
-					int c = group.NeedAppendC(DunLast);
+					int c = group.needC(DunLast);
 					if (c > 0) {
 						assert(offset < cpylen);
-						group.AppendC(DunLast, &cpy[offset], c);
+						group.append(DunLast, &cpy[offset], c);
 						offset += c;
 					}
 				}
@@ -2845,10 +2845,10 @@ namespace S13S {
 				CGameLogic::GetLeftCards(src, len, group.duns, cpy, cpylen);
 				//补充尾墩
 				{
-					int c = group.NeedAppendC(DunLast);
+					int c = group.needC(DunLast);
 					if (c > 0) {
 						assert(offset < cpylen);
-						group.AppendC(DunLast, &cpy[offset], c);
+						group.append(DunLast, &cpy[offset], c);
 						offset += c;
 					}
 				}
@@ -2860,10 +2860,10 @@ namespace S13S {
 				}
 				//补充中墩
 				{
-					int c = group.NeedAppendC(DunSecond);
+					int c = group.needC(DunSecond);
 					if (c > 0) {
 						assert(offset < cpylen);
-						group.AppendC(DunSecond, &cpy[offset], c);
+						group.append(DunSecond, &cpy[offset], c);
 						offset += c;
 						assert(offset == cpylen);
 					}
@@ -2940,28 +2940,28 @@ namespace S13S {
 				CGameLogic::GetLeftCards(src, len, group.duns, cpy, cpylen);
 				//补充尾墩
 				{
-					int c = group.NeedAppendC(DunLast);
+					int c = group.needC(DunLast);
 					if (c > 0) {
 						assert(offset < cpylen);
-						group.AppendC(DunLast, &cpy[offset], c);
+						group.append(DunLast, &cpy[offset], c);
 						offset += c;
 					}
 				}
 				//补充头墩
 				{
-					int c = group.NeedAppendC(DunFirst);
+					int c = group.needC(DunFirst);
 					if (c > 0) {
 						assert(offset < cpylen);
-						group.AppendC(DunFirst, &cpy[offset], c);
+						group.append(DunFirst, &cpy[offset], c);
 						offset += c;
 					}
 				}
 				//补充中墩
 				{
-					int c = group.NeedAppendC(DunSecond);
+					int c = group.needC(DunSecond);
 					if (c > 0) {
 						assert(offset < cpylen);
-						group.AppendC(DunSecond, &cpy[offset], c);
+						group.append(DunSecond, &cpy[offset], c);
 						offset += c;
 						assert(offset == cpylen);
 					}
