@@ -410,7 +410,7 @@ namespace S13S {
 			//cpy uint8_t *cpy 组墩后剩余牌 cpylen int& 余牌数量
 			void GetLeftCards(uint8_t const* src, int len, uint8_t *cpy, int& cpylen);
 			//返回组墩总牌数
-			int GetCardCount() { return duns_select[DunFirst].c + duns_select[DunSecond].c + duns_select[DunLast].c; }
+			inline int GetCardCount() { return duns_select[DunFirst].c + duns_select[DunSecond].c + duns_select[DunLast].c; }
 		public:
 			//玩家座椅ID
 			int chairID;

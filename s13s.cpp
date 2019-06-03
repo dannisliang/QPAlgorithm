@@ -3331,6 +3331,7 @@ namespace S13S {
 	//len int 3/5张，头敦3张/中墩5张/尾墩5张
 	//ty HandTy 指定墩牌型
 	bool CGameLogic::handinfo_t::SelectAs(DunTy dt, uint8_t const* src, int len, HandTy ty) {
+		assert(dt > DunNil && dt < DunMax);
 		if (duns_select[dt].GetC() > 0) {
 			return false;
 		}
@@ -3486,7 +3487,7 @@ namespace S13S {
 				//遍历每一墩里面的每张牌
 				for (int c = 0; c < duns[j].c; ++c) {
 					if (src[i] == duns[j].cards[c]) {
-						//src[i]在duns[i]中存在了
+						//src[i]在duns[j]中存在了
 						bok = true;
 						goto next;
 					}
