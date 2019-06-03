@@ -3009,7 +3009,7 @@ namespace S13S {
 				}
 				assert(leaf->size() <= 3);
 				group.assign(DunFirst, tyLeaf, &leaf->front(), leaf->size());
-				//组墩后剩余牌
+				//组墩后剩余牌/散牌
 				uint8_t cpy[MaxSZ] = { 0 };
 				int cpylen = 0, offset = 0;
 				CGameLogic::GetLeftCards(src, len, group.duns, cpy, cpylen);
