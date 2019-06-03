@@ -2630,6 +2630,11 @@ namespace S13S {
 			classify_t classify = { 0 };
 			//从余牌中枚举中墩/5张 //////
 			EnumCards(psrc, lensrc, 5, classify, *childEnumList, DunSecond);
+			
+			//printf("\n\n\n--- *** --------------------------------------------------\n");
+			//childEnumList->PrintEnumCards(false, TyAllBase);
+			//printf("--- *** --------------------------------------------------\n\n\n");
+
 		entry_child_iterator:
 			while (c < n) {
 				//返回一个枚举牌型及对应的余牌
@@ -2772,6 +2777,29 @@ namespace S13S {
 					//printf("--- *** %s\n", StringCardType(tyLeaf).c_str());
 					//头敦非对子/非三张，整墩非三同花顺/非三顺子/非三同花，则修改头敦为乌龙
 					if (tyLeaf != Ty20 && tyLeaf != Ty30 && specialTy_ != TyThree123sc && specialTy_ != TyThree123 && specialTy_ != TyThreesc) {
+						//头墩是3张同花顺/同花/顺子牌型，但是整墩构不成特殊牌型，当作散牌与余牌合并
+						//合并后再判断是否存在重复牌型，存在则跳过不处理
+						classify_t classify = { 0 };
+						{
+							uint8_t cpy[MaxSZ] = { 0 };
+							int cpylen = 0;
+							memcpy(cpy, cpy3, cpylen3);
+							cpylen += cpylen3;
+							EnumTree::EnumItem const* item = leafEnumList->GetCursorItem(cursorLeaf); assert(item);
+							EnumTree::CardData const* src = item->second;
+							memcpy(&cpy[cpylen], &src->front(), src->size());
+							cpylen += src->size();
+							SortCards(cpy, cpylen, true, true, true);
+							//printf("--- *** ---- merge cpy&leaf\n");
+							//PrintCardList(cpy, cpylen);
+							EnumTree enumList;
+							EnumCards(cpy, cpylen, 5, classify, enumList, DunLast);
+						}
+						if (classify.c2 > 0 || classify.c3 > 0 || classify.c4 > 0) {
+							masks[maskChild] = true;
+							masks[maskRoot] = true;
+							continue;
+						}
 						std::map<uint64_t, bool>::iterator it = masks.find(maskChild);
 						if (it == masks.end()) {
 							//子节点为叶子节点，记录中墩和尾墩，由叶子节点向上查找根节点
@@ -2835,6 +2863,7 @@ namespace S13S {
 				int cpylen = 0, offset = 0;
 				CGameLogic::GetLeftCards(src, len, group.duns, cpy, cpylen);
 				CGameLogic::SortCards(cpy, cpylen, false, true, true);
+				//printf("--- *** ---- start DunLast\n");
 				//PrintCardList(cpy, cpylen, true);
 				//补充尾墩
 				{
@@ -2887,6 +2916,7 @@ namespace S13S {
 				int cpylen = 0, offset = 0;
 				CGameLogic::GetLeftCards(src, len, group.duns, cpy, cpylen);
 				CGameLogic::SortCards(cpy, cpylen, false, true, true);
+				//printf("--- *** ---- start DunSecond\n");
 				//PrintCardList(cpy, cpylen, true);
 				//补充尾墩
 				{
@@ -2984,6 +3014,7 @@ namespace S13S {
 				int cpylen = 0, offset = 0;
 				CGameLogic::GetLeftCards(src, len, group.duns, cpy, cpylen);
 				CGameLogic::SortCards(cpy, cpylen, false, true, true);
+				//printf("--- *** ---- start DunFirst\n");
 				//PrintCardList(cpy, cpylen, true);
 				//补充尾墩
 				{
@@ -3578,7 +3609,7 @@ namespace S13S {
 	}
 
 	//枚举牌型测试
-	void CGameLogic::TestEnumCards() {
+	void CGameLogic::TestEnumCards(int size) {
 		CGameLogic g;
 		handinfo_t hand;
 		//初始化
@@ -3603,7 +3634,7 @@ namespace S13S {
 			//一副手牌
 			CGameLogic::PrintCardList(cards, MaxCount);
  			//手牌牌型分析
-			int c = CGameLogic::AnalyseHandCards(cards, MaxCount, 5, hand);
+			int c = CGameLogic::AnalyseHandCards(cards, MaxCount, size, hand);
 			//有特殊牌型时
 			//pause = (hand.specialTy_ != S13S::TyNil);
 			//有三同花顺/三同花/三顺子时
@@ -3614,7 +3645,7 @@ namespace S13S {
 			//	hand.classify.c2 >= 3);
 			//if (pause) {
 				//查看所有枚举牌型
-				hand.rootEnumList->PrintEnumCards(false, Ty123sc);
+				//hand.rootEnumList->PrintEnumCards(false, Ty123sc);
 				//查看手牌枚举三墩牌型
 				hand.PrintEnumCards();
 				//查看重复牌型和散牌
@@ -3629,23 +3660,28 @@ namespace S13S {
 	void CGameLogic::TestEnumCards(char const* filename) {
 		std::vector<std::string> lines;
 		readFile(filename, lines, ";;");
-		assert(lines.size() == 2);
+		assert(lines.size() >= 2);
+		//1->文件读取手牌 0->随机生成13张牌
 		int flag = atoi(lines[0].c_str());
+		//默认最多枚举多少组墩
+		int size = atoi(lines[1].c_str());
 		//1->文件读取手牌 0->随机生成13张牌
 		if (flag > 0) {
+			assert(lines.size() == 3);
 			CGameLogic g;
 			handinfo_t hand;
 			uint8_t cards[MaxCount + 10] = { 0 };
-			int n = CGameLogic::MakeCardList(lines[1], cards, MaxCount);
+			//line[2]构造一副手牌13张
+			int n = CGameLogic::MakeCardList(lines[2], cards, MaxCount);
 			//assert(n == 13);
 			//手牌排序
 			CGameLogic::SortCards(cards, n, true, true, true);
 			//一副手牌
 			CGameLogic::PrintCardList(cards, n);
 			//手牌牌型分析
-			int c = CGameLogic::AnalyseHandCards(cards, n, 5, hand);
+			int c = CGameLogic::AnalyseHandCards(cards, n, size, hand);
 			//查看所有枚举牌型
-			hand.rootEnumList->PrintEnumCards(false, Ty40);
+			//hand.rootEnumList->PrintEnumCards(false, Ty40);
 			//查看手牌枚举三墩牌型
 			hand.PrintEnumCards(true);
 			//查看重复牌型和散牌
@@ -3653,7 +3689,7 @@ namespace S13S {
 			printf("--- *** c = %d %s\n\n\n\n", c, hand.StringSpecialTy().c_str());
 		}
 		else {
-			TestEnumCards();
+			TestEnumCards(size);
 		}
 	}
 	

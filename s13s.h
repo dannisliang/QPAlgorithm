@@ -436,7 +436,7 @@ namespace S13S {
 		};
 	public:
 		//枚举牌型测试
-		static void TestEnumCards();
+		static void TestEnumCards(int size);
 		//枚举牌型测试
 		//filename char const* 文件读取手牌 cardsList.ini
 		static void TestEnumCards(char const* filename);
