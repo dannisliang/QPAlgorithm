@@ -348,7 +348,7 @@ namespace S13S {
 			}
 			void assign(DunTy dt, HandTy ty, uint8_t const* src, int len) {
 				assert(dt != DunNil);
-				if (start == DunNil || start < dt) {
+				if (start == DunNil || dt < start) {
 					start = dt;
 				}
 				duns[(int)(dt)].assign(dt, ty, src, len);
