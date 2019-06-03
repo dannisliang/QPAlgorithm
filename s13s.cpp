@@ -4031,6 +4031,8 @@ namespace S13S {
 							rspdata.set_dt(dt);
 							//墩对应牌型
 							rspdata.set_ty(ty);
+							//剩余牌
+							rspdata.set_cpy(cpy, cpylen);
 						}
 						else if (handInfos[i].GetCardCount() == 0) {
 							//////////////////////////////////////////////////////////////

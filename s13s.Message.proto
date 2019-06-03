@@ -52,6 +52,7 @@ message CMD_S_ManualCards
 	repeated bytes v20	  = 8; //所有对子(一对)
 	optional int32 dt     = 9; //客户端选择了哪一墩，标记0-头/1-中/2-尾
 	optional int32 ty     = 10;//墩对应牌型
+	optional bytes cpy    = 11;//剩余牌
 }
 ////////////////////////////////////////////////////////////////////////////////
 //手动摆牌
