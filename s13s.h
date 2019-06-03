@@ -390,7 +390,7 @@ namespace S13S {
 			void Init();
 			void Reset();
 			//打印全部枚举墩牌型
-			void PrintEnumCards(bool reserve = true);
+			void PrintEnumCards(bool reverse = true);
 			//返回特殊牌型字符串
 			std::string StringSpecialTy();
 			//返回特殊牌型字符串

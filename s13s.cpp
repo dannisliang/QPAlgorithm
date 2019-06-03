@@ -3144,6 +3144,7 @@ namespace S13S {
 			//printf("-- *** tree.size = %d\n", c);
 		}
 		{
+			//标识头/中/尾墩
 			dt_ = dt;
 			//初始化游标
 			cursor_ = -1;
@@ -3396,8 +3397,8 @@ namespace S13S {
 	}
 	
 	//打印全部枚举墩牌型
-	void CGameLogic::handinfo_t::PrintEnumCards(bool reserve) {
-		if(reserve) {
+	void CGameLogic::handinfo_t::PrintEnumCards(bool reverse) {
+		if(reverse) {
 			int i = groups.size();
 			//倒序从小到大输出
 			for (std::vector<groupdun_t>::reverse_iterator it = groups.rbegin();
