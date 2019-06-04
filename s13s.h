@@ -405,6 +405,8 @@ namespace S13S {
 			//len int 3/5张，头敦3张/中墩5张/尾墩5张
 			//ty HandTy 指定墩牌型
 			bool SelectAs(DunTy dt, uint8_t const* src, int len, HandTy ty);
+			//重新摆牌重置各墩牌数据
+			void ResetDunsSelect();
 			//返回组墩后剩余牌/散牌
 			//src uint8_t const* 一副手牌13张
 			//cpy uint8_t *cpy 组墩后剩余牌 cpylen int& 余牌数量

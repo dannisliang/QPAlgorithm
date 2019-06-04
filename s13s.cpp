@@ -3340,6 +3340,14 @@ namespace S13S {
 		return true;
  	}
 	
+	//重新摆牌重置各墩牌数据
+	void CGameLogic::handinfo_t::ResetDunsSelect() {
+		//memset(duns_select, 0, sizeof(dundata_t)*DunMax);
+		for (int i = DunFirst; i <= DunLast; ++i) {
+			duns_select[i].Reset();
+		}
+	}
+	
 	//返回组墩后剩余牌/散牌
 	//src uint8_t const* 一副手牌13张
 	//cpy uint8_t *cpy 组墩后剩余牌 cpylen int& 余牌数量
@@ -3787,19 +3795,19 @@ namespace S13S {
 					if (true) {
 						//手牌排序
 						S13S::CGameLogic::SortCards(&(handCards[i])[0], S13S::MaxCount, true, true, true);
-						//printf("\n\n========================================================================\n");
-						//printf("--- *** chairID = [%d]\n", i);
+						printf("\n\n========================================================================\n");
+						printf("--- *** chairID = [%d]\n", i);
 						//一副手牌
-						//S13S::CGameLogic::PrintCardList(&(handCards[i])[0], S13S::MaxCount);
+						S13S::CGameLogic::PrintCardList(&(handCards[i])[0], S13S::MaxCount);
 						//手牌牌型分析
 						int c = S13S::CGameLogic::AnalyseHandCards(&(handCards[i])[0], S13S::MaxCount, 3, handInfos[i]);
 						//查看所有枚举牌型
 						//handInfos[i].rootEnumList->PrintEnumCards(false, S13S::Ty123sc);
 						//查看手牌枚举三墩牌型
-						//handInfos[i].PrintEnumCards();
+						handInfos[i].PrintEnumCards();
 						//查看重复牌型和散牌
-						//handInfos[i].classify.PrintCardList();
-						//printf("--- *** c = %d %s\n\n\n\n", c, handInfos[i].StringSpecialTy().c_str());
+						handInfos[i].classify.PrintCardList();
+						printf("--- *** c = %d %s\n\n\n\n", c, handInfos[i].StringSpecialTy().c_str());
 					}
 				}
 			}
@@ -4037,7 +4045,11 @@ namespace S13S {
 							//剩余牌
 							rspdata.set_cpy(cpy, cpylen);
 						}
-						else if (handInfos[i].GetCardCount() == 0) {
+						else {
+							//////////////////////////////////////////////////////////////
+							//重新摆牌重置各墩牌数据
+							handInfos[i].ResetDunsSelect();
+							assert(handInfos[i].GetCardCount() == 0);
 							//////////////////////////////////////////////////////////////
 							//指向初始所有枚举牌型
 							rootEnumList = handInfos[i].rootEnumList;
