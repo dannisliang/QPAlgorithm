@@ -31,7 +31,7 @@ namespace S13S {
 	{
 		0x11,0x12,0x13,0x14,0x15,0x16,0x17,0x18,0x19,0x1A,0x1B,0x1C,0x1D, // 方块 A - K
 		0x21,0x22,0x23,0x24,0x25,0x26,0x27,0x28,0x29,0x2A,0x2B,0x2C,0x2D, // 梅花 A - K
-		0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0x3A,0x3B,0x3C,0x3D, // 红桃 A - K
+		0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0x3A,0x3B,0x3C,0x3D, // 红心 A - K
 		0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,0x4A,0x4B,0x4C,0x4D, // 黑桃 A - K
 	};
 
@@ -481,7 +481,7 @@ namespace S13S {
 	}
 	
 	//牌型字符串
-	std::string CGameLogic::StringCardType(HandTy ty) {
+	std::string CGameLogic::StringHandTy(HandTy ty) {
 		switch (ty)
 		{
 		case Tysp:		return "Tysp";
@@ -2608,7 +2608,7 @@ namespace S13S {
 				break;
 			}
 			
-			//printf("取尾墩 = [%s] ", StringCardType(tyRoot).c_str());
+			//printf("取尾墩 = [%s] ", StringHandTy(tyRoot).c_str());
 			//PrintCardList(&root->front(), root->size());
 			//rootEnumList->PrintCursorEnumCards();
 
@@ -2675,7 +2675,7 @@ namespace S13S {
 					}
 				}
 				
-				//printf("\n取中墩 = [%s] ", StringCardType(tyChild).c_str());
+				//printf("\n取中墩 = [%s] ", StringHandTy(tyChild).c_str());
 				//PrintCardList(&child->front(), child->size());
 				//childEnumList->PrintCursorEnumCards();
 
@@ -2743,7 +2743,7 @@ namespace S13S {
 						}
 					}
 
-					//printf("\n取头墩 = [%s] ", StringCardType(tyLeaf).c_str());
+					//printf("\n取头墩 = [%s] ", StringHandTy(tyLeaf).c_str());
 					//PrintCardList(&leaf->front(), leaf->size());
 					//leafEnumList->PrintCursorEnumCards();
 
@@ -2774,7 +2774,7 @@ namespace S13S {
 							}
 						}
 					//}
-					//printf("--- *** %s\n", StringCardType(tyLeaf).c_str());
+					//printf("--- *** %s\n", StringHandTy(tyLeaf).c_str());
 					//头敦非对子/非三张，整墩非三同花顺/非三顺子/非三同花，则修改头敦为乌龙
 					if (tyLeaf != Ty20 && tyLeaf != Ty30 && specialTy_ != TyThree123sc && specialTy_ != TyThree123 && specialTy_ != TyThreesc) {
 						//头墩是3张同花顺/同花/顺子牌型，但是整墩构不成特殊牌型，当作散牌与余牌合并
@@ -3246,7 +3246,7 @@ namespace S13S {
 	//打印枚举牌型
 	void CGameLogic::EnumTree::PrintEnumCards(std::string const& name, HandTy ty, std::vector<std::vector<uint8_t>> const& src, bool reverse) {
 		if (src.size() > 0) {
-			printf("--- *** 第[%d]墩 - %s[%s]\n", dt_ + 1, name.c_str(), StringCardType(ty).c_str());
+			printf("--- *** 第[%d]墩 - %s[%s]\n", dt_ + 1, name.c_str(), StringHandTy(ty).c_str());
 			if (reverse) {
 				for (std::vector<std::vector<uint8_t>>::const_reverse_iterator it = src.rbegin();
 					it != src.rend(); ++it) {
@@ -3283,7 +3283,7 @@ namespace S13S {
 	
 	//打印游标处枚举牌型
 	void CGameLogic::EnumTree::PrintCursorEnumCards(std::string const& name, HandTy ty, std::vector<uint8_t> const& src) {
-		printf("--- *** 第[%d]墩 - %s[%s]：", dt_ + 1, name.c_str(), StringCardType(ty).c_str());
+		printf("--- *** 第[%d]墩 - %s[%s]：", dt_ + 1, name.c_str(), StringHandTy(ty).c_str());
 		PrintCardList(&src[0], src.size());
 	}
 	
@@ -3366,7 +3366,7 @@ namespace S13S {
 
 	//打印指定墩牌型
 	void CGameLogic::groupdun_t::PrintCardList(std::string const& name, DunTy dt, HandTy ty) {
-		printf("--- *** 第[%d]墩 - %s[%s]：", dt + 1, name.c_str(), StringCardType(ty).c_str());
+		printf("--- *** 第[%d]墩 - %s[%s]：", dt + 1, name.c_str(), StringHandTy(ty).c_str());
 		CGameLogic::PrintCardList(duns[dt].cards, duns[dt].c, true);
 	}
 
@@ -3539,9 +3539,12 @@ namespace S13S {
 		HandTy ty = Tysp;//散牌
 		assert(dt > DunNil && dt < DunMax);
 		dt == DunFirst ? assert(len == 3) : assert(len == 5);
+		uint8_t psrc[5] = { 0 };
+		memcpy(psrc, src, len);
+		SortCards(psrc, len, true, true, true);
 		classify_t classify = { 0 };
 		EnumTree enumList;
-		EnumCards(src, len, len, classify, enumList, dt);
+		EnumCards(psrc, len, len, classify, enumList, dt);
 		if (enumList.v123sc.size() > 0) {
 			ty = Ty123sc;//同花顺
 		}

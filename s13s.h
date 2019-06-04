@@ -157,7 +157,7 @@ namespace S13S {
 		//单牌字符串
 		static std::string StringCard(uint8_t card);
 		//牌型字符串
-		static std::string StringCardType(HandTy ty);
+		static std::string StringHandTy(HandTy ty);
 		//打印n张牌
 		static void PrintCardList(uint8_t const* cards, int n, bool hide = true);
 		//获取牌有效列数

@@ -15,6 +15,7 @@
 #include <string>
 #include <stdlib.h>
 
+#include "cfg.h"
 #include "zjh.h"
 
 namespace ZJH {
@@ -22,10 +23,10 @@ namespace ZJH {
 	//一副扑克(52张)
 	uint8_t s_CardListData[MaxCardTotal] =
 	{
-		0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0A,0x0B,0x0C,0x0D, // 方块 A - K
-		0x11,0x12,0x13,0x14,0x15,0x16,0x17,0x18,0x19,0x1A,0x1B,0x1C,0x1D, // 梅花 A - K
-		0x21,0x22,0x23,0x24,0x25,0x26,0x27,0x28,0x29,0x2A,0x2B,0x2C,0x2D, // 红桃 A - K
-		0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0x3A,0x3B,0x3C,0x3D, // 黑桃 A - K
+		0x11,0x12,0x13,0x14,0x15,0x16,0x17,0x18,0x19,0x1A,0x1B,0x1C,0x1D, // 方块 A - K
+		0x21,0x22,0x23,0x24,0x25,0x26,0x27,0x28,0x29,0x2A,0x2B,0x2C,0x2D, // 梅花 A - K
+		0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0x3A,0x3B,0x3C,0x3D, // 红心 A - K
+		0x41,0x42,0x43,0x44,0x45,0x46,0x47,0x48,0x49,0x4A,0x4B,0x4C,0x4D, // 黑桃 A - K
 	};
 
 	//构造函数
@@ -50,7 +51,8 @@ namespace ZJH {
 
 	//debug打印
 	void CGameLogic::DebugListCards() {
-		SortCards(cardsData_, MaxCardTotal, false, false, false);
+		//手牌按花色升序(方块到黑桃)，同花色按牌值从小到大排序
+		SortCardsColor(cardsData_, MaxCardTotal, true, true, true);
 		for (int i = 0; i < MaxCardTotal; ++i) {
 			printf("%02X %s\n", cardsData_[i], StringCard(cardsData_[i]).c_str());
 		}
@@ -65,12 +67,15 @@ namespace ZJH {
 	void CGameLogic::ShuffleCards()
 	{
 		//printf("-- *** 洗牌...\n");
-		int c = rand()%20+5;
+		static uint32_t seed = (uint32_t)time(NULL);
+		//int c = rand() % 20 + 5;
+		int c = rand_r(&seed) % 20 + 5;
 		for (int k = 0; k < c; ++k) {
 			for (int i = 0; i < MaxCardTotal; ++i) {
-				int j = rand() % MaxCardTotal;
+				//int j = rand() % MaxCardTotal;
+				int j = rand_r(&seed) % MaxCardTotal;
 				if (i != j) {
-					swap(cardsData_[i], cardsData_[j]);
+					std::swap(cardsData_[i], cardsData_[j]);
 				}
 			}
 		}
@@ -89,6 +94,7 @@ namespace ZJH {
 		}
 		int k = 0;
 		for (int i = index_; i < index_ + n; ++i) {
+			assert(i < MaxCardTotal);
 			cards[k++] = cardsData_[i];
 		}
 		index_ += n;
@@ -103,13 +109,13 @@ namespace ZJH {
 	uint8_t CGameLogic::GetCardValue(uint8_t card) {
 		return (card & 0x0F);
 	}
-	
+
 	//点数：2<3<4<5<6<7<8<9<10<J<Q<K<A
 	uint8_t CGameLogic::GetCardPoint(uint8_t card) {
 		uint8_t value = GetCardValue(card);
 		return value == 0x01 ? 0x0E : value;
 	}
-	
+
 	//花色和牌值构造单牌
 	uint8_t CGameLogic::MakeCardWith(uint8_t color, uint8_t value) {
 		return (GetCardColor(color) | GetCardValue(value));
@@ -272,7 +278,7 @@ namespace ZJH {
 			}
 		}
 	}
-
+	
 	//牌值大小：A<2<3<4<5<6<7<8<9<10<J<Q<K
 	static bool byCardColorValueGG(uint8_t card1, uint8_t card2) {
 		uint8_t c0 = CGameLogic::GetCardColor(card1);
@@ -286,7 +292,7 @@ namespace ZJH {
 		uint8_t v1 = CGameLogic::GetCardValue(card2);
 		return v0 > v1;
 	}
-
+	
 	static bool byCardColorValueGL(uint8_t card1, uint8_t card2) {
 		uint8_t c0 = CGameLogic::GetCardColor(card1);
 		uint8_t c1 = CGameLogic::GetCardColor(card2);
@@ -299,7 +305,7 @@ namespace ZJH {
 		uint8_t v1 = CGameLogic::GetCardValue(card2);
 		return v0 < v1;
 	}
-
+	
 	static bool byCardColorValueLG(uint8_t card1, uint8_t card2) {
 		uint8_t c0 = CGameLogic::GetCardColor(card1);
 		uint8_t c1 = CGameLogic::GetCardColor(card2);
@@ -430,10 +436,13 @@ namespace ZJH {
 			}
 		}
 	}
-
+	
 	//牌值字符串 
 	std::string CGameLogic::StringCardValue(uint8_t value)
 	{
+		if (0 == value) {
+			return "?";
+		}
 		switch (value)
 		{
 		case A: return "A";
@@ -445,7 +454,7 @@ namespace ZJH {
 		sprintf(ch, "%d", value);
 		return ch;
 	}
-	
+
 	//花色字符串 
 	std::string CGameLogic::StringCardColor(uint8_t color)
 	{
@@ -456,9 +465,9 @@ namespace ZJH {
 		case Club:	  return "♣";
 		case Diamond: return "♦";
 		}
-		return "";
+		return "?";
 	}
-	
+
 	//单牌字符串
 	std::string CGameLogic::StringCard(uint8_t card) {
 		std::string s(StringCardColor(GetCardColor(card)));
@@ -466,6 +475,136 @@ namespace ZJH {
 		return s;
 	}
 
+	//牌型字符串
+	std::string CGameLogic::StringHandTy(HandTy ty) {
+		switch (ty)
+		{
+		case SanPai:   return "SanPai";
+		case DuiZi:    return "DuiZi";
+		case ShunZi:   return "ShunZi";
+		case JinHua:   return "JinHua";
+		case ShunJin:  return "ShunJin";
+		case BaoZi:    return "BaoZi";
+		case TeShu235: return "TeShu235";
+		}
+		return "";
+	}
+
+	//打印n张牌
+	void CGameLogic::PrintCardList(uint8_t const* cards, int n, bool hide) {
+		for (int i = 0; i < n; ++i) {
+			if (cards[i] == 0 && hide) {
+				continue;
+			}
+			printf("%s ", StringCard(cards[i]).c_str());
+		}
+		printf("\n");
+	}
+
+	//拆分字符串"♦A ♦3 ♥3 ♥4 ♦5 ♣5 ♥5 ♥6 ♣7 ♥7 ♣9 ♣10 ♣J"
+	void CGameLogic::CardsBy(std::string const& strcards, std::vector<std::string>& vec) {
+		std::string str(strcards);
+		while (true) {
+			std::string::size_type s = str.find_first_of(' ');
+			if (-1 == s) {
+				break;
+			}
+			vec.push_back(str.substr(0, s));
+			str = str.substr(s + 1);
+		}
+		if (!str.empty()) {
+			vec.push_back(str.substr(0, -1));
+		}
+	}
+
+	//字串构造牌"♦A"->0x01
+	uint8_t CGameLogic::MakeCardBy(std::string const& name) {
+		uint8_t color = 0, value = 0;
+		if (0 == strncmp(name.c_str(), "♠", 3)) {
+			color = Spade;
+			std::string str(name.substr(3, -1));
+			switch (str.front())
+			{
+			case 'J': value = J; break;
+			case 'Q': value = Q; break;
+			case 'K': value = K; break;
+			case 'A': value = A; break;
+			case 'T': value = T; break;
+			default: {
+				value = atoi(str.c_str());
+				break;
+			}
+			}
+		}
+		else if (0 == strncmp(name.c_str(), "♥", 3)) {
+			color = Heart;
+			std::string str(name.substr(3, -1));
+			switch (str.front())
+			{
+			case 'J': value = J; break;
+			case 'Q': value = Q; break;
+			case 'K': value = K; break;
+			case 'A': value = A; break;
+			case 'T': value = T; break;
+			default: {
+				value = atoi(str.c_str());
+				break;
+			}
+			}
+		}
+		else if (0 == strncmp(name.c_str(), "♣", 3)) {
+			color = Club;
+			std::string str(name.substr(3, -1));
+			switch (str.front())
+			{
+			case 'J': value = J; break;
+			case 'Q': value = Q; break;
+			case 'K': value = K; break;
+			case 'A': value = A; break;
+			case 'T': value = T; break;
+			default: {
+				value = atoi(str.c_str());
+				break;
+			}
+			}
+		}
+		else if (0 == strncmp(name.c_str(), "♦", 3)) {
+			color = Diamond;
+			std::string str(name.substr(3, -1));
+			switch (str.front())
+			{
+			case 'J': value = J; break;
+			case 'Q': value = Q; break;
+			case 'K': value = K; break;
+			case 'A': value = A; break;
+			case 'T': value = T; break;
+			default: {
+				value = atoi(str.c_str());
+				break;
+			}
+			}
+		}
+		assert(value != 0);
+		return value ? MakeCardWith(color, value) : 0;
+	}
+
+	//生成n张牌<-"♦A ♦3 ♥3 ♥4 ♦5 ♣5 ♥5 ♥6 ♣7 ♥7 ♣9 ♣10 ♣J"
+	void CGameLogic::MakeCardList(std::vector<std::string> const& vec, uint8_t *cards, int size) {
+		int c = 0;
+		for (std::vector<std::string>::const_iterator it = vec.begin();
+			it != vec.end(); ++it) {
+			cards[c++] = MakeCardBy(it->c_str());
+		}
+	}
+
+	//生成n张牌<-"♦A ♦3 ♥3 ♥4 ♦5 ♣5 ♥5 ♥6 ♣7 ♥7 ♣9 ♣10 ♣J"
+	int CGameLogic::MakeCardList(std::string const& strcards, uint8_t *cards, int size) {
+		std::vector<std::string> vec;
+		CardsBy(strcards, vec);
+		MakeCardList(vec, cards, size);
+		return (int)vec.size();
+	}
+	
 	//比较散牌大小
 	int CGameLogic::CompareSanPai(uint8_t *cards1, uint8_t *cards2)
 	{
@@ -639,21 +778,6 @@ namespace ZJH {
 		}
 		//散牌(高牌/单张)：三张牌不组成任何类型的牌
 		return SanPai;
-	}
-
-	//牌型字符串
-	std::string CGameLogic::StringHandType(HandTy ty) {
-		switch (ty)
-		{
-		case SanPai:   return "SanPai";
-		case DuiZi:    return "DuiZi";
-		case ShunZi:   return "ShunZi";
-		case JinHua:   return "JinHua";
-		case ShunJin:  return "ShunJin";
-		case BaoZi:    return "BaoZi";
-		case TeShu235: return "TeShu235";
-		}
-		return "";
 	}
 
 	//比较手牌大小 >0-cards1大 <0-cards2大

@@ -56,10 +56,10 @@ namespace ZJH {
 
 	//花色：黑>红>梅>方
 	enum CardColor {
-		Diamond = 0x00,	//方块(♦)
-		Club	= 0x10,	//梅花(♣)
-		Heart	= 0x20,	//红心(♥)
-		Spade	= 0x30,	//黑桃(♠)
+		Diamond = 0x10,	//方块(♦)
+		Club	= 0x20,	//梅花(♣)
+		Heart	= 0x30,	//红心(♥)
+		Spade	= 0x40,	//黑桃(♠)
 	};
 	
 	//牌值：A<2<3<4<5<6<7<8<9<10<J<Q<K
@@ -113,6 +113,20 @@ namespace ZJH {
 		static std::string StringCardColor(uint8_t color);
 		//单牌字符串
 		static std::string StringCard(uint8_t card);
+		//牌型字符串
+		static std::string StringHandTy(HandTy ty);
+		//打印n张牌
+		static void PrintCardList(uint8_t const* cards, int n, bool hide = true);
+	private:
+		//拆分字符串"♦A ♦3 ♥3 ♥4 ♦5 ♣5 ♥5 ♥6 ♣7 ♥7 ♣9 ♣10 ♣J"
+		static void CardsBy(std::string const& strcards, std::vector<std::string>& vec);
+		//字串构造牌"♦A"->0x01
+		static uint8_t MakeCardBy(std::string const& name);
+		//生成n张牌<-"♦A ♦3 ♥3 ♥4 ♦5 ♣5 ♥5 ♥6 ♣7 ♥7 ♣9 ♣10 ♣J"
+		static void MakeCardList(std::vector<std::string> const& vec, uint8_t *cards, int size);
+	public:
+		//生成n张牌<-"♦A ♦3 ♥3 ♥4 ♦5 ♣5 ♥5 ♥6 ♣7 ♥7 ♣9 ♣10 ♣J"
+		static int MakeCardList(std::string const& strcards, uint8_t *cards, int size);
 	private:
 		//比较散牌大小
 		static int CompareSanPai(uint8_t *cards1, uint8_t *cards2);
@@ -129,8 +143,6 @@ namespace ZJH {
 	public:
 		//玩家手牌类型
 		static HandTy GetHandCardsType(uint8_t *cards);
-		//牌型字符串
-		static std::string StringHandType(HandTy ty);
 		//比较手牌大小 >0-cards1大 <0-cards2大
 		static int CompareHandCards(uint8_t *cards1, uint8_t *cards2);
 		//比较手牌大小 >0-cards1大 <0-cards2大
