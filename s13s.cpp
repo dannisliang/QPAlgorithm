@@ -3546,7 +3546,7 @@ namespace S13S {
 	{
 		HandTy ty = Tysp;//散牌
 		assert(dt > DunNil && dt < DunMax);
-		dt == DunFirst ? assert(len == 3) : assert(len == 5);
+		assert(len == (dt == DunFirst ? 3 : 5));
 		uint8_t psrc[5] = { 0 };
 		memcpy(psrc, src, len);
 		SortCards(psrc, len, true, true, true);
