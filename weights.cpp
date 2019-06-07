@@ -16,12 +16,12 @@ static struct srand_init_t {
 	}
 }s_srand_init;
 
-//RandomBetween 随机数[a,b]
+//随机数[a,b]
 extern int RandomBetween(int a, int b) {
 	return a + rand() % (b - a + 1);
 }
 
-//GetResultByWeight 按权值来随机
+//按权值来随机
 int GetResultByWeight(int weight[], int len) {
 	int sum = 0;
 	for (int i = 0; i < len; ++i) {

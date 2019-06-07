@@ -3,10 +3,10 @@
 
 #define MAX_WEIGHT 10
 
-//RandomBetween 随机数[a,b]
+//随机数[a,b]
 extern int RandomBetween(int a, int b);
 
-//GetResultByWeight 按权值来随机
+//按权值来随机
 extern int GetResultByWeight(int weight[], int len);
 
 //权重池
