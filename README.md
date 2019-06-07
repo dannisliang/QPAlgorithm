@@ -4,6 +4,7 @@
 		cfg 文件读取
 		funcC 组合函数类
 		pb2Json protobuf/json格式转换
+		weights 按权重计算随机概率
 		
 		PJ 		牌九算法	
 		s13s	十三水算法，也是最复杂的一个
