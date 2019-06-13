@@ -19,6 +19,7 @@
 #include "cfg.h"
 #include "funcC.h"
 #include "s13s.h"
+#include "weights.h"
 
 //protobuf测试
 #include "s13s.Message.pb.h"
@@ -2887,7 +2888,7 @@ namespace S13S {
 					offset += 5;
 					assert(offset == cpylen);
 				}
-				groups.push_back(group);
+				enum_groups.push_back(group);
 				break;
 			}
 			case DunSecond: {
@@ -2943,7 +2944,7 @@ namespace S13S {
 					offset += 3;
 					assert(offset == cpylen);
 				}
-				groups.push_back(group);
+				enum_groups.push_back(group);
 				break;
 			}
 			case DunFirst: {
@@ -3044,7 +3045,7 @@ namespace S13S {
 						assert(offset == cpylen);
 					}
 				}
-				groups.push_back(group);
+				enum_groups.push_back(group);
 				break;
 			}
 			}
@@ -3086,6 +3087,12 @@ namespace S13S {
 				specialTy_ = TySix20;
 			}
 		}
+		assert(groups.size() == 0);
+		for (std::vector<groupdun_t>::const_iterator it = enum_groups.begin();
+			it != enum_groups.end(); ++it) {
+			groups.push_back(&*it);
+		}
+		assert(groups.size() > 0);
 	}
 
 	//初始化牌墩
@@ -3326,33 +3333,76 @@ namespace S13S {
 		return false;
 	}
 	
-	//给指定墩(头/中/尾墩)选择一组牌(头敦3/中墩5/尾墩5)
+	//手动选牌组墩，给指定墩(头/中/尾墩)选择一组牌(头敦3/中墩5/尾墩5)
 	//dt DunTy 指定为哪墩
 	//src uint8_t const* 选择的一组牌(5张或3张)
 	//len int 3/5张，头敦3张/中墩5张/尾墩5张
 	//ty HandTy 指定墩牌型
 	bool CGameLogic::handinfo_t::SelectAs(DunTy dt, uint8_t const* src, int len, HandTy ty) {
 		assert(dt > DunNil && dt < DunMax);
-		if (duns_select[dt].GetC() > 0) {
+		if (manual_group.duns[dt].GetC() > 0) {
 			return false;
 		}
-		duns_select[dt].assign(dt, ty, src, len);
+		manual_group.assign(dt, ty, src, len);
+		if (manual_group_index == -1) {
+			if (
+				manual_group.duns[DunFirst].GetC() == 3 &&
+				manual_group.duns[DunSecond].GetC() == 5 &&
+				manual_group.duns[DunLast].GetC() == 5) {
+				//构成完整三墩牌当作一组牌放入groups中
+				groups.push_back(&manual_group);
+				assert(groups.size() > 0);
+				manual_group_index = groups.size() - 1;
+			}
+		}
 		return true;
  	}
 	
-	//重新摆牌重置各墩牌数据
-	void CGameLogic::handinfo_t::ResetDunsSelect() {
-		//memset(duns_select, 0, sizeof(dundata_t)*DunMax);
-		for (int i = DunFirst; i <= DunLast; ++i) {
-			duns_select[i].Reset();
+	//重置手动摆牌
+	void CGameLogic::handinfo_t::ResetManual() {
+		if (manual_group_index != -1) {
+			groups.pop_back();
+			manual_group_index = -1;
 		}
+		manual_group.Reset();
+	}
+	
+	//手牌确定三墩牌型
+	//groupindex int 若 >=0 从enum_groups中选择一组，对应groups中索引
+	//groupindex int 若 <= -1 指向manual_group对应groups中索引
+	bool CGameLogic::handinfo_t::Select(int groupindex) {
+		if (groupindex >= 0) {
+			//枚举几组最优解必须存在
+			assert(enum_groups.size() > 0);
+			//不能超过枚举几组解范围
+			assert(groupindex < enum_groups.size());
+			//从枚举最优解中选择一组
+			//直接选择枚举中的一组进行比牌
+			select_group_index = groupindex;
+		}
+		else {
+			//否则指向手动摆牌组墩
+			assert(manual_group_index != -1);
+			//手动摆牌构成的一组进行比牌
+			select_group_index = manual_group_index;
+		}
+		return select_group_index != -1;
+	}
+	
+	//返回手牌确定的三墩牌型
+	CGameLogic::groupdun_t const* CGameLogic::handinfo_t::GetSelected() {
+		assert(select_group_index != -1);
+		assert(select_group_index >= 0);
+		assert(groups.size() > 0);
+		assert(select_group_index < groups.size());
+		return groups[select_group_index];
 	}
 	
 	//返回组墩后剩余牌/散牌
 	//src uint8_t const* 一副手牌13张
 	//cpy uint8_t *cpy 组墩后剩余牌 cpylen int& 余牌数量
 	void CGameLogic::handinfo_t::GetLeftCards(uint8_t const* src, int len, uint8_t *cpy, int& cpylen) {
-		CGameLogic::GetLeftCards(src, len, duns_select, cpy, cpylen);
+		CGameLogic::GetLeftCards(src, len, manual_group.duns, cpy, cpylen);
 	}
 	
 	//打印指定墩牌型
@@ -3390,27 +3440,26 @@ namespace S13S {
 	void CGameLogic::handinfo_t::Reset() {
 		chairID = -1;
 		specialTy_ = TyNil;
-		current = 0;
-		groups.clear();
+		manual_group_index = -1;
+		select_group_index = -1;
+		manual_group.Reset();
+		enum_groups.clear();
 		leafList.clear();
+		groups.clear();
 		if (rootEnumList) {
 			rootEnumList->Release();
 			rootEnumList->Reset();
 		}
 		memset(&classify, 0, sizeof(classify_t));
-		//memset(duns_select, 0, sizeof(dundata_t)*DunMax);
-		for (int i = DunFirst; i <= DunLast; ++i) {
-			duns_select[i].Reset();
-		}
 	}
 	
 	//打印全部枚举墩牌型
 	void CGameLogic::handinfo_t::PrintEnumCards(bool reverse) {
 		if(reverse) {
-			int i = groups.size();
+			int i = enum_groups.size();
 			//倒序从小到大输出
-			for (std::vector<groupdun_t>::reverse_iterator it = groups.rbegin();
-				it != groups.rend(); ++it) {
+			for (std::vector<groupdun_t>::reverse_iterator it = enum_groups.rbegin();
+				it != enum_groups.rend(); ++it) {
 				printf("\n--- *** --------------------------------------------------\n");
 				if (it->specialTy != TyNil) {
 					printf("--- *** 第[%d]组 %s\n", i--, StringSpecialTy(it->specialTy).c_str());
@@ -3426,8 +3475,8 @@ namespace S13S {
 		}
 		else {
 			int i = 0;
-			for (std::vector<groupdun_t>::iterator it = groups.begin();
-				it != groups.end(); ++it) {
+			for (std::vector<groupdun_t>::iterator it = enum_groups.begin();
+				it != enum_groups.end(); ++it) {
 				printf("\n--- *** --------------------------------------------------\n");
 				if (it->specialTy != TyNil) {
 					printf("--- *** 第[%d]组 %s\n", i++ + 1, StringSpecialTy(it->specialTy).c_str());
@@ -3711,9 +3760,11 @@ namespace S13S {
 		//游戏逻辑类
 		S13S::CGameLogic				g;
 		//所有玩家手牌
-		uint8_t							handCards[S13S::MaxPlayer][S13S::MaxCount];
+		uint8_t							handCards[GAME_PLAYER][MAX_COUNT];
 		//手牌牌型分析结果
-		S13S::CGameLogic::handinfo_t	handInfos[S13S::MaxPlayer];
+		S13S::CGameLogic::handinfo_t	handInfos[GAME_PLAYER];
+		//枚举多少组最优墩，开元/德胜是3组
+		int enum_group_sz = 15;
 		//初始化
 		g.InitCards();
 		//洗牌
@@ -3722,31 +3773,31 @@ namespace S13S {
 			{
 				//给各个玩家发牌
 			restart:
-				assert(S13S::MaxPlayer <= 4);
-				for (int i = 0; i < S13S::MaxPlayer; ++i) {
+				assert(GAME_PLAYER <= 4);
+				for (int i = 0; i < GAME_PLAYER; ++i) {
 					if (true) {
 						//余牌不够则重新洗牌，然后重新分发给各个玩家
-						if (g.Remaining() < S13S::MaxCount) {
+						if (g.Remaining() < MAX_COUNT) {
 							g.ShuffleCards();
 							goto restart;
 						}
 						//发牌
-						g.DealCards(S13S::MaxCount, &(handCards[i])[0]);
+						g.DealCards(MAX_COUNT, &(handCards[i])[0]);
 					}
 				}
 			}
 			{
 				//各个玩家手牌分析
-				for (int i = 0; i < S13S::MaxPlayer; ++i) {
+				for (int i = 0; i < GAME_PLAYER; ++i) {
 					if (true) {
 						//手牌排序
-						S13S::CGameLogic::SortCards(&(handCards[i])[0], S13S::MaxCount, true, true, true);
+						S13S::CGameLogic::SortCards(&(handCards[i])[0], MAX_COUNT, true, true, true);
 						printf("\n\n========================================================================\n");
 						printf("--- *** chairID = [%d]\n", i);
 						//一副手牌
-						S13S::CGameLogic::PrintCardList(&(handCards[i])[0], S13S::MaxCount);
+						S13S::CGameLogic::PrintCardList(&(handCards[i])[0], MAX_COUNT);
 						//手牌牌型分析
-						int c = S13S::CGameLogic::AnalyseHandCards(&(handCards[i])[0], S13S::MaxCount, 15, handInfos[i]);
+						int c = S13S::CGameLogic::AnalyseHandCards(&(handCards[i])[0], MAX_COUNT, enum_group_sz, handInfos[i]);
 						//查看所有枚举牌型
 						handInfos[i].rootEnumList->PrintEnumCards(false, S13S::Ty123sc);
 						//查看手牌枚举三墩牌型
@@ -3760,14 +3811,16 @@ namespace S13S {
 		} while ('q' != getchar());
 	}
 
-	//protobuf测试
+	//开始游戏测试
 	void CGameLogic::TestProtoCards() {
 		//游戏逻辑类
 		S13S::CGameLogic				g;
 		//所有玩家手牌
-		uint8_t							handCards[S13S::MaxPlayer][S13S::MaxCount];
+		uint8_t							handCards[GAME_PLAYER][MAX_COUNT];
 		//手牌牌型分析结果
-		S13S::CGameLogic::handinfo_t	handInfos[S13S::MaxPlayer];
+		S13S::CGameLogic::handinfo_t	handInfos[GAME_PLAYER];
+		//枚举多少组最优墩，开元/德胜是3组
+		int enum_group_sz = 3;
 		//初始化
 		g.InitCards();
 		//洗牌
@@ -3776,31 +3829,31 @@ namespace S13S {
 			{
 				//给各个玩家发牌
 			restart:
-				assert(S13S::MaxPlayer <= 4);
-				for (int i = 0; i < S13S::MaxPlayer; ++i) {
+				assert(GAME_PLAYER <= 4);
+				for (int i = 0; i < GAME_PLAYER; ++i) {
 					if (true) {
 						//余牌不够则重新洗牌，然后重新分发给各个玩家
-						if (g.Remaining() < S13S::MaxCount) {
+						if (g.Remaining() < MAX_COUNT) {
 							g.ShuffleCards();
 							goto restart;
 						}
 						//发牌
-						g.DealCards(S13S::MaxCount, &(handCards[i])[0]);
+						g.DealCards(MAX_COUNT, &(handCards[i])[0]);
 					}
 				}
 			}
 			{
 				//各个玩家手牌分析
-				for (int i = 0; i < S13S::MaxPlayer; ++i) {
+				for (int i = 0; i < GAME_PLAYER; ++i) {
 					if (true) {
 						//手牌排序
-						S13S::CGameLogic::SortCards(&(handCards[i])[0], S13S::MaxCount, true, true, true);
+						S13S::CGameLogic::SortCards(&(handCards[i])[0], MAX_COUNT, true, true, true);
 						printf("\n\n========================================================================\n");
 						printf("--- *** chairID = [%d]\n", i);
 						//一副手牌
-						S13S::CGameLogic::PrintCardList(&(handCards[i])[0], S13S::MaxCount);
+						S13S::CGameLogic::PrintCardList(&(handCards[i])[0], MAX_COUNT);
 						//手牌牌型分析
-						int c = S13S::CGameLogic::AnalyseHandCards(&(handCards[i])[0], S13S::MaxCount, 3, handInfos[i]);
+						int c = S13S::CGameLogic::AnalyseHandCards(&(handCards[i])[0], MAX_COUNT, enum_group_sz, handInfos[i]);
 						//查看所有枚举牌型
 						//handInfos[i].rootEnumList->PrintEnumCards(false, S13S::Ty123sc);
 						//查看手牌枚举三墩牌型
@@ -3811,14 +3864,14 @@ namespace S13S {
 					}
 				}
 			}
-			//protobuf测试
+			//开始游戏测试
 			{
-				for (int i = 0; i < S13S::MaxPlayer; ++i) {
+				for (int i = 0; i < GAME_PLAYER; ++i) {
 					if (true) {
 						printf("\n\n========================================================================\n");
 						printf("--- *** chairID = [%d]\n", i);
 						//一副手牌
-						S13S::CGameLogic::PrintCardList(&(handCards[i])[0], S13S::MaxCount);
+						S13S::CGameLogic::PrintCardList(&(handCards[i])[0], MAX_COUNT);
 						//查看重复牌型和散牌
 						handInfos[i].classify.PrintCardList();
 						//查看所有枚举牌型
@@ -3830,12 +3883,12 @@ namespace S13S {
 						//一副手牌
 						s13s::HandCards* handcards = reqdata.mutable_handcards();
 						//一副13张手牌
-						handcards->set_cards(&(handCards[i])[0], S13S::MaxCount);
+						handcards->set_cards(&(handCards[i])[0], MAX_COUNT);
 						//标记手牌特殊牌型
 						handcards->set_specialty(handInfos[i].specialTy_);
 						int j = 0;
-						for (std::vector<S13S::CGameLogic::groupdun_t>::iterator it = handInfos[i].groups.begin();
-							it != handInfos[i].groups.end(); ++it) {
+						for (std::vector<S13S::CGameLogic::groupdun_t>::iterator it = handInfos[i].enum_groups.begin();
+							it != handInfos[i].enum_groups.end(); ++it) {
 							//枚举几组最优墩
 							s13s::GroupDunData* group = handcards->add_groups();
 							//从哪墩开始的
@@ -3844,41 +3897,20 @@ namespace S13S {
 							group->set_specialty(it->specialTy);
 							//[0]头敦(3)/[1]中墩(5)/[2]尾墩(5)
 							printf("第[%d]组\t=>>\t", j++ + 1);
-							{
-								//[0]头敦(3)
-								s13s::DunData* dun0 = group->add_duns();
+							for (int i = S13S::DunFirst; i <= S13S::DunLast; ++i) {
+								//[0]头敦(3)/[1]中墩(5)/[2]尾墩(5)
+								s13s::DunData* dun_i = group->add_duns();
 								//标记0-头/1-中/2-尾
-								dun0->set_id(S13S::DunFirst);
+								dun_i->set_id(i);
 								//墩对应普通牌型
-								dun0->set_ty(it->duns[S13S::DunFirst].ty_);
+								dun_i->set_ty(it->duns[i].ty_);
 								//墩对应牌数c(3/5/5)
-								dun0->set_c(it->duns[S13S::DunFirst].c);
-								//墩牌数据(头敦3张)
-								dun0->set_cards(it->duns[S13S::DunFirst].cards, it->duns[S13S::DunFirst].c);
-								printf("dun[0] c:=%d\t", it->duns[S13S::DunFirst].c);
-								//[1]中墩(5)
-								s13s::DunData* dun1 = group->add_duns();
-								//标记0-头/1-中/2-尾
-								dun1->set_id(S13S::DunSecond);
-								//墩对应普通牌型
-								dun1->set_ty(it->duns[S13S::DunSecond].ty_);
-								//墩对应牌数c(3/5/5)
-								dun1->set_c(it->duns[S13S::DunSecond].c);
-								//墩牌数据(中墩5张)
-								dun1->set_cards(it->duns[S13S::DunSecond].cards, it->duns[S13S::DunSecond].c);
-								printf("dun[1] c:=%d\t", it->duns[S13S::DunSecond].c);
-								//[2]尾墩(5)
-								s13s::DunData* dun2 = group->add_duns();
-								//标记0-头/1-中/2-尾
-								dun2->set_id(S13S::DunLast);
-								//墩对应普通牌型
-								dun2->set_ty(it->duns[S13S::DunLast].ty_);
-								//墩对应牌数c(3/5/5)
-								dun2->set_c(it->duns[S13S::DunLast].c);
-								//墩牌数据(尾墩5张)
-								dun2->set_cards(it->duns[S13S::DunLast].cards, it->duns[S13S::DunLast].c);
-								printf("dun[2] c:=%d\n\n", it->duns[S13S::DunLast].c);
+								dun_i->set_c(it->duns[i].c);
+								//墩牌数据(头墩(3)/中墩(5)/尾墩(5))
+								dun_i->set_cards(it->duns[i].cards, it->duns[i].c);
+								printf("dun[%d] c:=%d\t", i, it->duns[i].c);
 							}
+							printf("\n\n");
 						}
 						{
 							//序列化std::string
@@ -3925,7 +3957,7 @@ namespace S13S {
 							printf("\n--- *** %s\n", typeName.c_str());
 							printf("%s\n\n", jsonstr.c_str());
 						}
-						printf("--- *** chairID = [%d] c = %d %s\n\n\n\n", i, handInfos[i].groups.size(), handInfos[i].StringSpecialTy().c_str());
+						printf("--- *** chairID = [%d] c = %d %s\n\n\n\n", i, handInfos[i].enum_groups.size(), handInfos[i].StringSpecialTy().c_str());
 					}
 				}
 			}
@@ -3937,9 +3969,11 @@ namespace S13S {
 		//游戏逻辑类
 		S13S::CGameLogic				g;
 		//所有玩家手牌
-		uint8_t							handCards[S13S::MaxPlayer][S13S::MaxCount];
+		uint8_t							handCards[GAME_PLAYER][MAX_COUNT];
 		//手牌牌型分析结果
-		S13S::CGameLogic::handinfo_t	handInfos[S13S::MaxPlayer];
+		S13S::CGameLogic::handinfo_t	handInfos[GAME_PLAYER];
+		//枚举多少组最优墩，开元/德胜是3组
+		int enum_group_sz = 3;
 		//初始化
 		g.InitCards();
 		//洗牌
@@ -3948,31 +3982,31 @@ namespace S13S {
 			{
 				//给各个玩家发牌
 			restart:
-				assert(S13S::MaxPlayer <= 4);
-				for (int i = 0; i < S13S::MaxPlayer; ++i) {
+				assert(GAME_PLAYER <= 4);
+				for (int i = 0; i < GAME_PLAYER; ++i) {
 					if (true) {
 						//余牌不够则重新洗牌，然后重新分发给各个玩家
-						if (g.Remaining() < S13S::MaxCount) {
+						if (g.Remaining() < MAX_COUNT) {
 							g.ShuffleCards();
 							goto restart;
 						}
 						//发牌
-						g.DealCards(S13S::MaxCount, &(handCards[i])[0]);
+						g.DealCards(MAX_COUNT, &(handCards[i])[0]);
 					}
 				}
 			}
 			{
 				//各个玩家手牌分析
-				for (int i = 0; i < S13S::MaxPlayer; ++i) {
+				for (int i = 0; i < GAME_PLAYER; ++i) {
 					if (true) {
 						//手牌排序
-						S13S::CGameLogic::SortCards(&(handCards[i])[0], S13S::MaxCount, true, true, true);
+						S13S::CGameLogic::SortCards(&(handCards[i])[0], MAX_COUNT, true, true, true);
 						printf("\n\n========================================================================\n");
 						printf("--- *** chairID = [%d]\n", i);
 						//一副手牌
-						S13S::CGameLogic::PrintCardList(&(handCards[i])[0], S13S::MaxCount);
+						S13S::CGameLogic::PrintCardList(&(handCards[i])[0], MAX_COUNT);
 						//手牌牌型分析
-						int c = S13S::CGameLogic::AnalyseHandCards(&(handCards[i])[0], S13S::MaxCount, 3, handInfos[i]);
+						int c = S13S::CGameLogic::AnalyseHandCards(&(handCards[i])[0], MAX_COUNT, enum_group_sz, handInfos[i]);
 						//查看所有枚举牌型
 						handInfos[i].rootEnumList->PrintEnumCards(false, S13S::Ty123sc);
 						//查看手牌枚举三墩牌型
@@ -3986,17 +4020,382 @@ namespace S13S {
 			//手动摆牌测试
 			{
 				//遍历各个座椅玩家
-				for (int i = 0; i < S13S::MaxPlayer; ++i) {
+				for (int i = 0; i < GAME_PLAYER; ++i) {
 					if (true) {
-						//////////////////////////////////////////////////////////////
+						//服务器应答数据
+						s13s::CMD_S_ManualCards rspdata;
+						for (int k = 1; k <= 4; ++k) {
+							//客户端请求数据
+							s13s::CMD_C_ManualCards reqdata;
+							//if (!reqdata.ParseFromArray(data, dataLen)) {
+							//	return false;
+							//}
+							switch (k) {
+							case 1: {
+								//第一次点击手动摆牌按钮，获取初始所有枚举牌型，reqdata传空数据
+								break;
+							}
+							case 2: {
+								//第二次从13张手牌中随机抽5张放入尾墩
+								int j = RandomBetween(0, MAX_COUNT - 5);
+								reqdata.set_dt(S13S::DunLast);
+								reqdata.set_cards(&(handCards[i])[j], 5);
+								break;
+							}
+							case 3: {
+								assert(rspdata.cpy().size() == 8);
+								//第三次从余下手牌中随机抽5张放入中墩
+								int j = RandomBetween(0, rspdata.cpy().size() - 5);
+								reqdata.set_dt(S13S::DunSecond);
+								reqdata.set_cards(rspdata.cpy().c_str() + j, 5);
+								break;
+							}
+							case 4: {
+								assert(rspdata.cpy().size() == 3);
+								//第四次从余下手牌中随机抽3张放入头墩
+								int j = RandomBetween(0, rspdata.cpy().size() - 3);
+								assert(j == 0);
+								reqdata.set_dt(S13S::DunFirst);
+								reqdata.set_cards(rspdata.cpy().c_str() + j, 3);
+								break;
+							}
+							}
+							{
+								//转换json格式
+								std::string jsonstr;
+								PB2JSON::Pb2Json::PbMsg2JsonStr(reqdata, jsonstr, true);
+								std::string const& typeName = reqdata.GetTypeName();//typename
+								printf("\n--- *** %s\n", typeName.c_str());
+								printf("%s\n\n", jsonstr.c_str());
+							}
+							rspdata.Clear();
+							//服务器应答数据
+							//s13s::CMD_S_ManualCards rspdata;
+							S13S::CGameLogic::EnumTree enumList;
+							S13S::CGameLogic::EnumTree* rootEnumList = NULL;
+							//客户端选择了哪一墩
+							S13S::DunTy dt = (S13S::DunTy)(reqdata.dt());
+							//客户端选择了哪些牌
+							uint8_t * cards = (uint8_t *)reqdata.cards().c_str();
+							//客户端选择了几张牌
+							int len = reqdata.cards().size();
+							if (len > 0) {
+								//对客户端选择的一组牌，进行单墩牌型判断
+								S13S::HandTy ty = S13S::CGameLogic::GetDunCardHandTy(dt, cards, len);
+								//手动摆牌，前墩要么三条/对子/乌龙，同花顺/同花/顺子都要改成乌龙
+								if (dt == S13S::DunFirst && (ty == S13S::Ty123sc || ty == S13S::Tysc || ty == S13S::Ty123)) {
+									ty = S13S::Tysp;
+								}
+								//手动选牌组墩，给指定墩(头/中/尾墩)选择一组牌
+								if (!handInfos[i].SelectAs(dt, cards, len, ty)) {
+									continue;
+								}
+								//返回组墩后剩余牌
+								uint8_t cpy[S13S::MaxSZ] = { 0 };
+								int cpylen = 0;
+								handInfos[i].GetLeftCards(&(handCards[i])[0], MAX_COUNT, cpy, cpylen);
+								//从余牌中枚举所有牌型
+								S13S::CGameLogic::classify_t classify = { 0 };
+								S13S::CGameLogic::EnumCards(cpy, cpylen, len, classify, enumList, dt);
+								//指向新的所有枚举牌型
+								rootEnumList = &enumList;
+								//客户端选择了哪一墩，标记0-头/1-中/2-尾
+								rspdata.set_dt(dt);
+								//墩对应牌型
+								rspdata.set_ty(ty);
+								//剩余牌
+								rspdata.set_cpy(cpy, cpylen);
+							}
+							else {
+								//重新摆牌重置手动摆牌
+								handInfos[i].ResetManual();
+								assert(handInfos[i].GetManualC() == 0);
+								//指向初始所有枚举牌型
+								rootEnumList = handInfos[i].rootEnumList;
+							}
+							//所有枚举牌型
+							s13s::EnumCards* cards_enums = rspdata.mutable_enums();
+							assert(rootEnumList != NULL);
+							for (std::vector<S13S::CGameLogic::EnumTree::CardData>::iterator it = rootEnumList->v123sc.begin();
+								it != rootEnumList->v123sc.end(); ++it) {
+								cards_enums->add_v123sc(&it->front(), it->size());
+							}
+							for (std::vector<S13S::CGameLogic::EnumTree::CardData>::iterator it = rootEnumList->v40.begin();
+								it != rootEnumList->v40.end(); ++it) {
+								cards_enums->add_v40(&it->front(), it->size());
+							}
+							for (std::vector<S13S::CGameLogic::EnumTree::CardData>::iterator it = rootEnumList->v32.begin();
+								it != rootEnumList->v32.end(); ++it) {
+								cards_enums->add_v32(&it->front(), it->size());
+							}
+							for (std::vector<S13S::CGameLogic::EnumTree::CardData>::iterator it = rootEnumList->vsc.begin();
+								it != rootEnumList->vsc.end(); ++it) {
+								cards_enums->add_vsc(&it->front(), it->size());
+							}
+							for (std::vector<S13S::CGameLogic::EnumTree::CardData>::iterator it = rootEnumList->v123.begin();
+								it != rootEnumList->v123.end(); ++it) {
+								cards_enums->add_v123(&it->front(), it->size());
+							}
+							for (std::vector<S13S::CGameLogic::EnumTree::CardData>::iterator it = rootEnumList->v30.begin();
+								it != rootEnumList->v30.end(); ++it) {
+								cards_enums->add_v30(&it->front(), it->size());
+							}
+							for (std::vector<S13S::CGameLogic::EnumTree::CardData>::iterator it = rootEnumList->v22.begin();
+								it != rootEnumList->v22.end(); ++it) {
+								cards_enums->add_v22(&it->front(), it->size());
+							}
+							for (std::vector<S13S::CGameLogic::EnumTree::CardData>::iterator it = rootEnumList->v20.begin();
+								it != rootEnumList->v20.end(); ++it) {
+								cards_enums->add_v20(&it->front(), it->size());
+							}
+							{
+								//序列化std::string
+								//std::string data = rspdata.SerializeAsString();
+								//序列化bytes
+								int len = rspdata.ByteSize();//len
+								uint8_t *data = new uint8_t[len];
+								rspdata.SerializeToArray(data, len);//data
+								std::string const& typeName = rspdata.GetTypeName();//typename
+								delete[] data;
+								//转换json格式
+								std::string jsonstr;
+								PB2JSON::Pb2Json::PbMsg2JsonStr(rspdata, jsonstr, true);
+								printf("\n--- *** %s\n", typeName.c_str());
+								printf("%s\n\n", jsonstr.c_str());
+							}
+						}
+					}
+				}
+			}
+		} while ('q' != getchar());
+	}
+
+	//确定牌型/比牌测试
+	//先让每个玩家确定手牌三墩牌型，手动摆牌或者从枚举几组中任选一组作为手牌牌型与其他玩家比牌，
+	//再玩家之间两两比牌，头敦与头敦比，中墩与中墩比，尾墩与尾墩比，并计算输赢积分(输赢多少水，统计打枪/全垒打)
+	void CGameLogic::TestCompareCards() {
+		//游戏逻辑类
+		S13S::CGameLogic				g;
+		//所有玩家手牌
+		uint8_t							handCards[GAME_PLAYER][MAX_COUNT];
+		//手牌牌型分析结果
+		S13S::CGameLogic::handinfo_t	handInfos[GAME_PLAYER];
+		//枚举多少组最优墩，开元/德胜是3组
+		int enum_group_sz = 3;
+		//初始化
+		g.InitCards();
+		//洗牌
+		g.ShuffleCards();
+		do {
+			{
+				//给各个玩家发牌
+			restart:
+				assert(GAME_PLAYER <= 4);
+				for (int i = 0; i < GAME_PLAYER; ++i) {
+					if (true) {
+						//余牌不够则重新洗牌，然后重新分发给各个玩家
+						if (g.Remaining() < MAX_COUNT) {
+							g.ShuffleCards();
+							goto restart;
+						}
+						//发牌
+						g.DealCards(MAX_COUNT, &(handCards[i])[0]);
+					}
+				}
+			}
+			{
+				//各个玩家手牌分析
+				for (int i = 0; i < GAME_PLAYER; ++i) {
+					if (true) {
+						//手牌排序
+						S13S::CGameLogic::SortCards(&(handCards[i])[0], MAX_COUNT, true, true, true);
+						printf("\n\n========================================================================\n");
+						printf("--- *** chairID = [%d]\n", i);
+						//一副手牌
+						S13S::CGameLogic::PrintCardList(&(handCards[i])[0], MAX_COUNT);
+						//手牌牌型分析
+						int c = S13S::CGameLogic::AnalyseHandCards(&(handCards[i])[0], MAX_COUNT, enum_group_sz, handInfos[i]);
+						//查看所有枚举牌型
+						handInfos[i].rootEnumList->PrintEnumCards(false, S13S::Ty123sc);
+						//查看手牌枚举三墩牌型
+						handInfos[i].PrintEnumCards();
+						//查看重复牌型和散牌
+						handInfos[i].classify.PrintCardList();
+						printf("--- *** c = %d %s\n\n\n\n", c, handInfos[i].StringSpecialTy().c_str());
+					}
+				}
+			}
+			//手动摆牌测试
+			{
+				//遍历各个座椅玩家
+				for (int i = 0; i < GAME_PLAYER; ++i) {
+					if (true) {
+						//服务器应答数据
+						s13s::CMD_S_ManualCards rspdata;
+						for (int k = 1; k <= 4; ++k) {
+							//客户端请求数据
+							s13s::CMD_C_ManualCards reqdata;
+							//if (!reqdata.ParseFromArray(data, dataLen)) {
+							//	return false;
+							//}
+							switch (k) {
+							case 1: {
+								//第一次点击手动摆牌按钮，获取初始所有枚举牌型，reqdata传空数据
+								break;
+							}
+							case 2:{
+								//第二次从13张手牌中随机抽5张放入尾墩
+								int j = RandomBetween(0, MAX_COUNT - 5);
+								reqdata.set_dt(S13S::DunLast);
+								reqdata.set_cards(&(handCards[i])[j], 5);
+								break;
+							}
+							case 3: {
+								assert(rspdata.cpy().size() == 8);
+								//第三次从余下手牌中随机抽5张放入中墩
+								int j = RandomBetween(0, rspdata.cpy().size() - 5);
+								reqdata.set_dt(S13S::DunSecond);
+								reqdata.set_cards(rspdata.cpy().c_str() + j, 5);
+								break;
+							}
+							case 4: {
+								assert(rspdata.cpy().size() == 3);
+								//第四次从余下手牌中随机抽3张放入头墩
+								int j = RandomBetween(0, rspdata.cpy().size() - 3);
+								assert(j == 0);
+								reqdata.set_dt(S13S::DunFirst);
+								reqdata.set_cards(rspdata.cpy().c_str() + j, 3);
+								break;
+							}
+							}
+							{
+								//转换json格式
+								std::string jsonstr;
+								PB2JSON::Pb2Json::PbMsg2JsonStr(reqdata, jsonstr, true);
+								std::string const& typeName = reqdata.GetTypeName();//typename
+								printf("\n--- *** %s\n", typeName.c_str());
+								printf("%s\n\n", jsonstr.c_str());
+							}
+							rspdata.Clear();
+							//服务器应答数据
+							//s13s::CMD_S_ManualCards rspdata;
+							S13S::CGameLogic::EnumTree enumList;
+							S13S::CGameLogic::EnumTree* rootEnumList = NULL;
+							//客户端选择了哪一墩
+							S13S::DunTy dt = (S13S::DunTy)(reqdata.dt());
+							//客户端选择了哪些牌
+							uint8_t * cards = (uint8_t *)reqdata.cards().c_str();
+							//客户端选择了几张牌
+							int len = reqdata.cards().size();
+							if (len > 0) {
+								//对客户端选择的一组牌，进行单墩牌型判断
+								S13S::HandTy ty = S13S::CGameLogic::GetDunCardHandTy(dt, cards, len);
+								//手动摆牌，前墩要么三条/对子/乌龙，同花顺/同花/顺子都要改成乌龙
+								if (dt == S13S::DunFirst && (ty == S13S::Ty123sc || ty == S13S::Tysc || ty == S13S::Ty123)) {
+									ty = S13S::Tysp;
+								}
+								//手动选牌组墩，给指定墩(头/中/尾墩)选择一组牌
+								if (!handInfos[i].SelectAs(dt, cards, len, ty)) {
+									continue;
+								}
+								//返回组墩后剩余牌
+								uint8_t cpy[S13S::MaxSZ] = { 0 };
+								int cpylen = 0;
+								handInfos[i].GetLeftCards(&(handCards[i])[0], MAX_COUNT, cpy, cpylen);
+								//从余牌中枚举所有牌型
+								S13S::CGameLogic::classify_t classify = { 0 };
+								S13S::CGameLogic::EnumCards(cpy, cpylen, len, classify, enumList, dt);
+								//指向新的所有枚举牌型
+								rootEnumList = &enumList;
+								//客户端选择了哪一墩，标记0-头/1-中/2-尾
+								rspdata.set_dt(dt);
+								//墩对应牌型
+								rspdata.set_ty(ty);
+								//剩余牌
+								rspdata.set_cpy(cpy, cpylen);
+							}
+							else {
+								//重新摆牌重置手动摆牌
+								handInfos[i].ResetManual();
+								assert(handInfos[i].GetManualC() == 0);
+								//指向初始所有枚举牌型
+								rootEnumList = handInfos[i].rootEnumList;
+							}
+							//所有枚举牌型
+							s13s::EnumCards* cards_enums = rspdata.mutable_enums();
+							assert(rootEnumList != NULL);
+							for (std::vector<S13S::CGameLogic::EnumTree::CardData>::iterator it = rootEnumList->v123sc.begin();
+								it != rootEnumList->v123sc.end(); ++it) {
+								cards_enums->add_v123sc(&it->front(), it->size());
+							}
+							for (std::vector<S13S::CGameLogic::EnumTree::CardData>::iterator it = rootEnumList->v40.begin();
+								it != rootEnumList->v40.end(); ++it) {
+								cards_enums->add_v40(&it->front(), it->size());
+							}
+							for (std::vector<S13S::CGameLogic::EnumTree::CardData>::iterator it = rootEnumList->v32.begin();
+								it != rootEnumList->v32.end(); ++it) {
+								cards_enums->add_v32(&it->front(), it->size());
+							}
+							for (std::vector<S13S::CGameLogic::EnumTree::CardData>::iterator it = rootEnumList->vsc.begin();
+								it != rootEnumList->vsc.end(); ++it) {
+								cards_enums->add_vsc(&it->front(), it->size());
+							}
+							for (std::vector<S13S::CGameLogic::EnumTree::CardData>::iterator it = rootEnumList->v123.begin();
+								it != rootEnumList->v123.end(); ++it) {
+								cards_enums->add_v123(&it->front(), it->size());
+							}
+							for (std::vector<S13S::CGameLogic::EnumTree::CardData>::iterator it = rootEnumList->v30.begin();
+								it != rootEnumList->v30.end(); ++it) {
+								cards_enums->add_v30(&it->front(), it->size());
+							}
+							for (std::vector<S13S::CGameLogic::EnumTree::CardData>::iterator it = rootEnumList->v22.begin();
+								it != rootEnumList->v22.end(); ++it) {
+								cards_enums->add_v22(&it->front(), it->size());
+							}
+							for (std::vector<S13S::CGameLogic::EnumTree::CardData>::iterator it = rootEnumList->v20.begin();
+								it != rootEnumList->v20.end(); ++it) {
+								cards_enums->add_v20(&it->front(), it->size());
+							}
+							{
+								//序列化std::string
+								//std::string data = rspdata.SerializeAsString();
+								//序列化bytes
+								int len = rspdata.ByteSize();//len
+								uint8_t *data = new uint8_t[len];
+								rspdata.SerializeToArray(data, len);//data
+								std::string const& typeName = rspdata.GetTypeName();//typename
+								delete[] data;
+								//转换json格式
+								std::string jsonstr;
+								PB2JSON::Pb2Json::PbMsg2JsonStr(rspdata, jsonstr, true);
+								printf("\n--- *** %s\n", typeName.c_str());
+								printf("%s\n\n", jsonstr.c_str());
+							}
+						}
+					}
+				}
+			}
+			//确定牌型/比牌测试
+			{
+				//确定牌型的玩家数
+				int selectcount = 0;
+				//遍历各个座椅玩家
+				for (int i = 0; i < GAME_PLAYER; ++i) {
+					if (true) {
 						//客户端请求数据
-						s13s::CMD_C_ManualCards reqdata;
-						//13张手牌抽取前面5张牌放入尾墩
-						reqdata.set_dt(S13S::DunLast);
-						reqdata.set_cards(&(handCards[i])[0], 5);
-						//if (!reqdata.ParseFromArray(data, dataLen)) {
-						//	return false;
-						//}
+						s13s::CMD_C_MakesureDunHandTy reqdata;
+// 						if (!reqdata.ParseFromArray(data, dataLen)) {
+// 							return false;
+// 						}
+						if (rand() % 2 == 0) {
+							//手动摆牌构成的一组进行比牌
+							reqdata.set_groupindex(-1);
+						}
+						else {
+							//直接选择枚举中的一组进行比牌
+							int groupindex = RandomBetween(0, handInfos[i].enum_groups.size() - 1);
+							reqdata.set_groupindex(groupindex);
+						}
 						{
 							//转换json格式
 							std::string jsonstr;
@@ -4005,107 +4404,745 @@ namespace S13S {
 							printf("\n--- *** %s\n", typeName.c_str());
 							printf("%s\n\n", jsonstr.c_str());
 						}
-						//////////////////////////////////////////////////////////////
-						//服务器应答数据
-						s13s::CMD_S_ManualCards rspdata;
-						//////////////////////////////////////////////////////////////
-						S13S::CGameLogic::EnumTree enumList;
-						S13S::CGameLogic::EnumTree* rootEnumList = NULL;
-						//////////////////////////////////////////////////////////////
-						//客户端选择了哪一墩
-						S13S::DunTy dt = (S13S::DunTy)(reqdata.dt());
-						//客户端选择了哪些牌
-						uint8_t * cards = (uint8_t *)reqdata.cards().c_str();
-						//客户端选择了几张牌
-						int len = reqdata.cards().size();
-						if (len > 0) {
-							//////////////////////////////////////////////////////////////
-							//对客户端选择的一组牌，进行单墩牌型判断
-							S13S::HandTy ty = S13S::CGameLogic::GetDunCardHandTy(dt, cards, len);
-							//给指定墩(头/中/尾墩)选择一组牌
-							if (!handInfos[i].SelectAs(dt, cards, len, ty)) {
-								continue;
+						
+						//玩家已经确认过牌型
+						if (handInfos[i].HasSelected()) {
+							assert(false);
+							return;
+						}
+						//确认玩家手牌三墩牌型
+						if (!handInfos[i].Select(reqdata.groupindex())) {
+							assert(false);
+							return;
+						}
+						//检查是否都确认牌型了
+						if (++selectcount < GAME_PLAYER) {
+						}
+					}
+				}
+				//所有玩家牌型都确认了，比牌
+				int c = 0;
+				int chairIDs[GAME_PLAYER] = { 0 };
+				for (int i = 0; i < GAME_PLAYER; ++i) {
+					if (true) {
+						chairIDs[c++] = i;
+					}
+				}
+				assert(c >= MIN_GAME_PLAYER);
+				//玩家之间两两比牌，头敦与头敦比，中墩与中墩比，尾墩与尾墩比
+				s13s::PlayerItem player_items[GAME_PLAYER];
+				std::vector<std::vector<int>> vec;
+				CFuncC fnC;
+				fnC.FuncC(c, 2, vec);
+				CFuncC::Print(vec);
+				for (std::vector<std::vector<int>>::const_iterator it = vec.begin();
+					it != vec.end(); ++it) {
+					assert(it->size() == 2);//两两比牌
+					int src_chairid = chairIDs[(*it)[0]];//src椅子ID
+					int dst_chairid = chairIDs[(*it)[1]];//dst椅子ID
+					assert(src_chairid < GAME_PLAYER);
+					assert(dst_chairid < GAME_PLAYER);
+					player_items[src_chairid].set_chairid(src_chairid);
+					player_items[dst_chairid].set_chairid(dst_chairid);
+					//获取src确定的三墩牌型
+					S13S::CGameLogic::groupdun_t const *src = handInfos[src_chairid].GetSelected();
+					//获取dst确定的三墩牌型
+					S13S::CGameLogic::groupdun_t const *dst = handInfos[dst_chairid].GetSelected();
+					{
+						//追加src比牌对象 ////////////
+						s13s::ComparePlayer* src_peer = player_items[src_chairid].add_peers();
+						{
+							//比牌对象桌椅ID
+							src_peer->set_chairid(dst_chairid);
+							//比牌对象选择一组墩
+							s13s::GroupDunData* src_peer_select = src_peer->mutable_group();
+							//从哪墩开始的
+							src_peer_select->set_start(S13S::DunFirst);
+							//总体对应特殊牌型
+							src_peer_select->set_specialty(dst->specialTy);
+							//[0]头敦(3)/[1]中墩(5)/[2]尾墩(5)
+							for (int i = S13S::DunFirst; i <= S13S::DunLast; ++i) {
+								//[0]头墩(3)/[1]中墩(5)/[2]尾墩(5)
+								s13s::DunData* src_peer_dun_i = src_peer_select->add_duns();
+								//标记0-头/1-中/2-尾
+								src_peer_dun_i->set_id(i);
+								//墩对应普通牌型
+								src_peer_dun_i->set_ty(dst->duns[i].ty_);
+								//墩对应牌数c(3/5/5)
+								src_peer_dun_i->set_c(dst->duns[i].c);
+								//墩牌数据(头墩(3)/中墩(5)/尾墩(5))
+								src_peer_dun_i->set_cards(dst->duns[i].cards, dst->duns[i].c);
 							}
-							//返回组墩后剩余牌
-							uint8_t cpy[S13S::MaxSZ] = { 0 };
-							int cpylen = 0;
-							handInfos[i].GetLeftCards(&(handCards[i])[0], S13S::MaxCount, cpy, cpylen);
-							//////////////////////////////////////////////////////////////
-							//从余牌中枚举所有牌型
-							S13S::CGameLogic::classify_t classify = { 0 };
-							S13S::CGameLogic::EnumCards(cpy, cpylen, len, classify, enumList, dt);
-							//////////////////////////////////////////////////////////////
-							//指向新的所有枚举牌型
-							rootEnumList = &enumList;
-							//////////////////////////////////////////////////////////////
-							//客户端选择了哪一墩，标记0-头/1-中/2-尾
-							rspdata.set_dt(dt);
-							//墩对应牌型
-							rspdata.set_ty(ty);
-							//剩余牌
-							rspdata.set_cpy(cpy, cpylen);
+						}
+						//追加src比牌结果 ////////////
+						s13s::CompareResult* src_result = player_items[src_chairid].add_results();
+					}
+					{
+						//追加dst比牌对象 ////////////
+						s13s::ComparePlayer* dst_peer = player_items[dst_chairid].add_peers();
+						{
+							//比牌对象桌椅ID
+							dst_peer->set_chairid(src_chairid);
+							//比牌对象选择一组墩
+							s13s::GroupDunData* dst_peer_select = dst_peer->mutable_group();
+							//从哪墩开始的
+							dst_peer_select->set_start(S13S::DunFirst);
+							//总体对应特殊牌型
+							dst_peer_select->set_specialty(src->specialTy);
+							//[0]头敦(3)/[1]中墩(5)/[2]尾墩(5)
+							for (int i = S13S::DunFirst; i <= S13S::DunLast; ++i) {
+								//[0]头墩(3)/[1]中墩(5)/[2]尾墩(5)
+								s13s::DunData* dst_peer_dun_i = dst_peer_select->add_duns();
+								//标记0-头/1-中/2-尾
+								dst_peer_dun_i->set_id(i);
+								//墩对应普通牌型
+								dst_peer_dun_i->set_ty(src->duns[i].ty_);
+								//墩对应牌数c(3/5/5)
+								dst_peer_dun_i->set_c(src->duns[i].c);
+								//墩牌数据(头敦3张)
+								dst_peer_dun_i->set_cards(src->duns[i].cards, src->duns[i].c);
+							}
+						}
+						//追加dst比牌结果 ////////////
+						s13s::CompareResult* dst_result = player_items[dst_chairid].add_results();
+					}
+					//////////////////////////////////////////////////////////////
+					//比较头敦
+					{
+						//单墩比牌，前墩要么三条/对子/乌龙，同花顺/同花/顺子都要改成乌龙
+						if (src->duns[S13S::DunFirst].ty_ == S13S::Ty123sc ||
+							src->duns[S13S::DunFirst].ty_ == S13S::Tysc ||
+							src->duns[S13S::DunFirst].ty_ == S13S::Ty123) {
+							//assert(src->duns[S13S::DunFirst].ty_ == S13S::Tysp);
+							const_cast<S13S::CGameLogic::groupdun_t*>(src)->duns[S13S::DunFirst].ty_ = S13S::Tysp;
+						}
+						//单墩比牌，前墩要么三条/对子/乌龙，同花顺/同花/顺子都要改成乌龙
+						if (dst->duns[S13S::DunFirst].ty_ == S13S::Ty123sc ||
+							dst->duns[S13S::DunFirst].ty_ == S13S::Tysc ||
+							dst->duns[S13S::DunFirst].ty_ == S13S::Ty123) {
+							//assert(dst->duns[S13S::DunFirst].ty_ == S13S::Tysp);
+							const_cast<S13S::CGameLogic::groupdun_t*>(dst)->duns[S13S::DunFirst].ty_ = S13S::Tysp;
+						}
+						int winner = -1, loser = -1;
+						int dt = S13S::DunFirst;
+						if (src->duns[dt].ty_ != dst->duns[dt].ty_) {
+							//牌型不同比牌型
+							if (src->duns[dt].ty_ > dst->duns[dt].ty_) {
+								winner = src_chairid; loser = dst_chairid;
+							}
+							else if (src->duns[dt].ty_ < dst->duns[dt].ty_) {
+								winner = dst_chairid; loser = src_chairid;
+							}
+							else {
+								assert(false);
+							}
 						}
 						else {
-							//////////////////////////////////////////////////////////////
-							//重新摆牌重置各墩牌数据
-							handInfos[i].ResetDunsSelect();
-							assert(handInfos[i].GetCardCount() == 0);
-							//////////////////////////////////////////////////////////////
-							//指向初始所有枚举牌型
-							rootEnumList = handInfos[i].rootEnumList;
+							//牌型相同比大小
+							assert(src->duns[dt].GetC() == 3);
+							assert(dst->duns[dt].GetC() == 3);
+							bool bv = S13S::CGameLogic::CompareCards(
+								src->duns[dt].cards, dst->duns[dt].cards, dst->duns[dt].GetC(), false, dst->duns[dt].ty_);
+							if (bv > 0) {
+								winner = src_chairid; loser = dst_chairid;
+							}
+							else if (bv < 0) {
+								winner = dst_chairid; loser = src_chairid;
+							}
+							else {
+								//头墩和
+								//assert(false);
+							}
 						}
-						assert(rootEnumList != NULL);
-						for (std::vector<S13S::CGameLogic::EnumTree::CardData>::iterator it = rootEnumList->v123sc.begin();
-							it != rootEnumList->v123sc.end(); ++it) {
-							rspdata.add_v123sc(&it->front(), it->size());
+						if (winner == -1) {
+							//头墩和
+							winner = src_chairid; loser = dst_chairid;
+							{
+								int index = player_items[winner].results_size() - 1;
+								assert(index >= 0);
+								//src比牌结果 ////////////
+								s13s::CompareResult* result = player_items[winner].mutable_results(index);
+								//头墩输赢信息
+								s13s::CompareItem* item = result->add_items();
+								{
+									//和了
+									item->set_winlost(0);
+									//和分
+									item->set_score(0);
+									//和的牌型
+									item->set_ty(handInfos[winner].GetSelected()->duns[dt].ty_);
+									//对方牌型
+									item->set_peerty(handInfos[loser].GetSelected()->duns[dt].ty_);
+								}
+							}
+							{
+								int index = player_items[loser].results_size() - 1;
+								assert(index >= 0);
+								//dst比牌结果 ////////////
+								s13s::CompareResult* result = player_items[loser].mutable_results(index);
+								//头墩输赢信息
+								s13s::CompareItem* item = result->add_items();
+								{
+									//和了
+									item->set_winlost(0);
+									//和分
+									item->set_score(0);
+									//和的牌型
+									item->set_ty(handInfos[loser].GetSelected()->duns[dt].ty_);
+									//对方牌型
+									item->set_peerty(handInfos[winner].GetSelected()->duns[dt].ty_);
+								}
+							}
 						}
-						for (std::vector<S13S::CGameLogic::EnumTree::CardData>::iterator it = rootEnumList->v40.begin();
-							it != rootEnumList->v40.end(); ++it) {
-							rspdata.add_v40(&it->front(), it->size());
+						//乌龙/对子获胜赢1水
+						else if (handInfos[winner].GetSelected()->duns[dt].ty_ == S13S::Tysp ||
+								 handInfos[winner].GetSelected()->duns[dt].ty_ == S13S::Ty20) {
+								{
+									int index = player_items[winner].results_size() - 1;
+									assert(index >= 0);
+									//赢家比牌结果 ////////////
+									s13s::CompareResult* result = player_items[winner].mutable_results(index);
+									//头墩输赢信息
+									s13s::CompareItem* item = result->add_items();
+									{
+										//赢了
+										item->set_winlost(1);
+										//赢分
+										item->set_score(1);
+										//赢的牌型
+										item->set_ty(handInfos[winner].GetSelected()->duns[dt].ty_);
+										//对方牌型
+										item->set_peerty(handInfos[loser].GetSelected()->duns[dt].ty_);
+									}
+								}
+								{
+									int index = player_items[loser].results_size() - 1;
+									assert(index >= 0);
+									//输家比牌结果 ////////////
+									s13s::CompareResult* result = player_items[loser].mutable_results(index);
+									//头墩输赢信息
+									s13s::CompareItem* item = result->add_items();
+									{
+										//输了
+										item->set_winlost(-1);
+										//输分
+										item->set_score(-1);
+										//输的牌型
+										item->set_ty(handInfos[loser].GetSelected()->duns[dt].ty_);
+										//对方牌型
+										item->set_peerty(handInfos[winner].GetSelected()->duns[dt].ty_);
+									}
+								}
 						}
-						for (std::vector<S13S::CGameLogic::EnumTree::CardData>::iterator it = rootEnumList->v32.begin();
-							it != rootEnumList->v32.end(); ++it) {
-							rspdata.add_v32(&it->front(), it->size());
+						//三条摆头敦获胜赢3水
+						else if (handInfos[winner].GetSelected()->duns[dt].ty_ == S13S::Ty30) {
+							{
+								int index = player_items[winner].results_size() - 1;
+								assert(index >= 0);
+								//赢家比牌结果 ////////////
+								s13s::CompareResult* result = player_items[winner].mutable_results(index);
+								//头墩输赢信息
+								s13s::CompareItem* item = result->add_items();
+								{
+									//赢了
+									item->set_winlost(1);
+									//赢分
+									item->set_score(3);
+									//赢的牌型
+									item->set_ty(handInfos[winner].GetSelected()->duns[dt].ty_);
+									//对方牌型
+									item->set_peerty(handInfos[loser].GetSelected()->duns[dt].ty_);
+								}
+							}
+							{
+								int index = player_items[loser].results_size() - 1;
+								assert(index >= 0);
+								//输家比牌结果 ////////////
+								s13s::CompareResult* result = player_items[loser].mutable_results(index);
+								//头墩输赢信息
+								s13s::CompareItem* item = result->add_items();
+								{
+									//输了
+									item->set_winlost(-1);
+									//输分
+									item->set_score(-3);
+									//输的牌型
+									item->set_ty(handInfos[loser].GetSelected()->duns[dt].ty_);
+									//对方牌型
+									item->set_peerty(handInfos[winner].GetSelected()->duns[dt].ty_);
+								}
+							}
 						}
-						for (std::vector<S13S::CGameLogic::EnumTree::CardData>::iterator it = rootEnumList->vsc.begin();
-							it != rootEnumList->vsc.end(); ++it) {
-							rspdata.add_vsc(&it->front(), it->size());
+						else {
+							assert(false);
 						}
-						for (std::vector<S13S::CGameLogic::EnumTree::CardData>::iterator it = rootEnumList->v123.begin();
-							it != rootEnumList->v123.end(); ++it) {
-							rspdata.add_v123(&it->front(), it->size());
+					}
+					//////////////////////////////////////////////////////////////
+					//比较中墩
+					{
+						int winner = -1, loser = -1;
+						int dt = S13S::DunSecond;
+						if (src->duns[dt].ty_ != dst->duns[dt].ty_) {
+							//牌型不同比牌型
+							if (src->duns[dt].ty_ > dst->duns[dt].ty_) {
+								winner = src_chairid; loser = dst_chairid;
+							}
+							else if (src->duns[dt].ty_ < dst->duns[dt].ty_) {
+								winner = dst_chairid; loser = src_chairid;
+							}
+							else {
+								assert(false);
+							}
 						}
-						for (std::vector<S13S::CGameLogic::EnumTree::CardData>::iterator it = rootEnumList->v30.begin();
-							it != rootEnumList->v30.end(); ++it) {
-							rspdata.add_v30(&it->front(), it->size());
+						else {
+							//牌型相同比大小
+							assert(src->duns[dt].GetC() == 5);
+							assert(dst->duns[dt].GetC() == 5);
+							bool bv = S13S::CGameLogic::CompareCards(
+								src->duns[dt].cards, dst->duns[dt].cards, dst->duns[dt].GetC(), false, dst->duns[dt].ty_);
+							if (bv > 0) {
+								winner = src_chairid; loser = dst_chairid;
+							}
+							else if (bv < 0) {
+								winner = dst_chairid; loser = src_chairid;
+							}
+							else {
+								//中墩和
+								//assert(false);
+							}
 						}
-						for (std::vector<S13S::CGameLogic::EnumTree::CardData>::iterator it = rootEnumList->v22.begin();
-							it != rootEnumList->v22.end(); ++it) {
-							rspdata.add_v22(&it->front(), it->size());
+						if (winner == -1) {
+							//中墩和
+							winner = src_chairid; loser = dst_chairid;
+							{
+								int index = player_items[winner].results_size() - 1;
+								assert(index >= 0);
+								//src比牌结果 ////////////
+								s13s::CompareResult* result = player_items[winner].mutable_results(index);
+								//中墩输赢信息
+								s13s::CompareItem* item = result->add_items();
+								{
+									//和了
+									item->set_winlost(0);
+									//和分
+									item->set_score(0);
+									//和的牌型
+									item->set_ty(handInfos[winner].GetSelected()->duns[dt].ty_);
+									//对方牌型
+									item->set_peerty(handInfos[loser].GetSelected()->duns[dt].ty_);
+								}
+							}
+							{
+								int index = player_items[loser].results_size() - 1;
+								assert(index >= 0);
+								//dst比牌结果 ////////////
+								s13s::CompareResult* result = player_items[loser].mutable_results(index);
+								//中墩输赢信息
+								s13s::CompareItem* item = result->add_items();
+								{
+									//和了
+									item->set_winlost(0);
+									//和分
+									item->set_score(0);
+									//和的牌型
+									item->set_ty(handInfos[loser].GetSelected()->duns[dt].ty_);
+									//对方牌型
+									item->set_peerty(handInfos[winner].GetSelected()->duns[dt].ty_);
+								}
+							}
 						}
-						for (std::vector<S13S::CGameLogic::EnumTree::CardData>::iterator it = rootEnumList->v20.begin();
-							it != rootEnumList->v20.end(); ++it) {
-							rspdata.add_v20(&it->front(), it->size());
+						//乌龙/对子/两对/三条/顺子/同花获胜赢1水
+						else if (handInfos[winner].GetSelected()->duns[dt].ty_ == S13S::Tysp ||
+							handInfos[winner].GetSelected()->duns[dt].ty_ == S13S::Ty20 ||
+							handInfos[winner].GetSelected()->duns[dt].ty_ == S13S::Ty22 ||
+							handInfos[winner].GetSelected()->duns[dt].ty_ == S13S::Ty30 ||
+							handInfos[winner].GetSelected()->duns[dt].ty_ == S13S::Ty123 ||
+							handInfos[winner].GetSelected()->duns[dt].ty_ == S13S::Tysc) {
+								{
+									int index = player_items[winner].results_size() - 1;
+									assert(index >= 0);
+									//赢家比牌结果 ////////////
+									s13s::CompareResult* result = player_items[winner].mutable_results(index);
+									//中墩输赢信息
+									s13s::CompareItem* item = result->add_items();
+									{
+										//赢了
+										item->set_winlost(1);
+										//赢分
+										item->set_score(1);
+										//赢的牌型
+										item->set_ty(handInfos[winner].GetSelected()->duns[dt].ty_);
+										//对方牌型
+										item->set_peerty(handInfos[loser].GetSelected()->duns[dt].ty_);
+									}
+								}
+								{
+									int index = player_items[loser].results_size() - 1;
+									assert(index >= 0);
+									//输家比牌结果 ////////////
+									s13s::CompareResult* result = player_items[loser].mutable_results(index);
+									//中墩输赢信息
+									s13s::CompareItem* item = result->add_items();
+									{
+										//输了
+										item->set_winlost(-1);
+										//输分
+										item->set_score(-1);
+										//输的牌型
+										item->set_ty(handInfos[loser].GetSelected()->duns[dt].ty_);
+										//对方牌型
+										item->set_peerty(handInfos[winner].GetSelected()->duns[dt].ty_);
+									}
+								}
 						}
+						//葫芦摆中敦获胜赢2水
+						else if (handInfos[winner].GetSelected()->duns[dt].ty_ == S13S::Ty32) {
+							{
+								int index = player_items[winner].results_size() - 1;
+								assert(index >= 0);
+								//赢家比牌结果 ////////////
+								s13s::CompareResult* result = player_items[winner].mutable_results(index);
+								//中墩输赢信息
+								s13s::CompareItem* item = result->add_items();
+								{
+									//赢了
+									item->set_winlost(1);
+									//赢分
+									item->set_score(2);
+									//赢的牌型
+									item->set_ty(handInfos[winner].GetSelected()->duns[dt].ty_);
+									//对方牌型
+									item->set_peerty(handInfos[loser].GetSelected()->duns[dt].ty_);
+								}
+							}
+							{
+								int index = player_items[loser].results_size() - 1;
+								assert(index >= 0);
+								//输家比牌结果 ////////////
+								s13s::CompareResult* result = player_items[loser].mutable_results(index);
+								//中墩输赢信息
+								s13s::CompareItem* item = result->add_items();
+								{
+									//输了
+									item->set_winlost(-1);
+									//输分
+									item->set_score(-2);
+									//输的牌型
+									item->set_ty(handInfos[loser].GetSelected()->duns[dt].ty_);
+									//对方牌型
+									item->set_peerty(handInfos[winner].GetSelected()->duns[dt].ty_);
+								}
+							}
+						}
+						//铁支摆中墩获胜赢8水
+						else if (handInfos[winner].GetSelected()->duns[dt].ty_ == S13S::Ty40) {
+							{
+								int index = player_items[winner].results_size() - 1;
+								assert(index >= 0);
+								//赢家比牌结果 ////////////
+								s13s::CompareResult* result = player_items[winner].mutable_results(index);
+								//中墩输赢信息
+								s13s::CompareItem* item = result->add_items();
+								{
+									//赢了
+									item->set_winlost(1);
+									//赢分
+									item->set_score(8);
+									//赢的牌型
+									item->set_ty(handInfos[winner].GetSelected()->duns[dt].ty_);
+									//对方牌型
+									item->set_peerty(handInfos[loser].GetSelected()->duns[dt].ty_);
+								}
+							}
+							{
+								int index = player_items[loser].results_size() - 1;
+								assert(index >= 0);
+								//输家比牌结果 ////////////
+								s13s::CompareResult* result = player_items[loser].mutable_results(index);
+								//中墩输赢信息
+								s13s::CompareItem* item = result->add_items();
+								{
+									//输了
+									item->set_winlost(-1);
+									//输分
+									item->set_score(-8);
+									//输的牌型
+									item->set_ty(handInfos[loser].GetSelected()->duns[dt].ty_);
+									//对方牌型
+									item->set_peerty(handInfos[winner].GetSelected()->duns[dt].ty_);
+								}
+							}
+						}
+						//同花顺摆中墩获胜赢10水
+						else if (handInfos[winner].GetSelected()->duns[dt].ty_ == S13S::Ty123sc) {
+							{
+								int index = player_items[winner].results_size() - 1;
+								assert(index >= 0);
+								//赢家比牌结果 ////////////
+								s13s::CompareResult* result = player_items[winner].mutable_results(index);
+								//中墩输赢信息
+								s13s::CompareItem* item = result->add_items();
+								{
+									//赢了
+									item->set_winlost(1);
+									//赢分
+									item->set_score(10);
+									//赢的牌型
+									item->set_ty(handInfos[winner].GetSelected()->duns[dt].ty_);
+									//对方牌型
+									item->set_peerty(handInfos[loser].GetSelected()->duns[dt].ty_);
+								}
+							}
+							{
+								int index = player_items[loser].results_size() - 1;
+								assert(index >= 0);
+								//输家比牌结果 ////////////
+								s13s::CompareResult* result = player_items[loser].mutable_results(index);
+								//中墩输赢信息
+								s13s::CompareItem* item = result->add_items();
+								{
+									//输了
+									item->set_winlost(-1);
+									//输分
+									item->set_score(-10);
+									//输的牌型
+									item->set_ty(handInfos[loser].GetSelected()->duns[dt].ty_);
+									//对方牌型
+									item->set_peerty(handInfos[winner].GetSelected()->duns[dt].ty_);
+								}
+							}
+						}
+						else {
+							assert(false);
+						}
+					}
+					//////////////////////////////////////////////////////////////
+					//比较尾敦
+					{
+						int winner = -1, loser = -1;
+						int dt = S13S::DunLast;
+						if (src->duns[dt].ty_ != dst->duns[dt].ty_) {
+							//牌型不同比牌型
+							if (src->duns[dt].ty_ > dst->duns[dt].ty_) {
+								winner = src_chairid; loser = dst_chairid;
+							}
+							else if (src->duns[dt].ty_ < dst->duns[dt].ty_) {
+								winner = dst_chairid; loser = src_chairid;
+							}
+							else {
+								assert(false);
+							}
+						}
+						else {
+							//牌型相同比大小
+							assert(src->duns[dt].GetC() == 5);
+							assert(dst->duns[dt].GetC() == 5);
+							bool bv = S13S::CGameLogic::CompareCards(
+								src->duns[dt].cards, dst->duns[dt].cards, dst->duns[dt].GetC(), false, dst->duns[dt].ty_);
+							if (bv > 0) {
+								winner = src_chairid; loser = dst_chairid;
+							}
+							else if (bv < 0) {
+								winner = dst_chairid; loser = src_chairid;
+							}
+							else {
+								//尾墩和
+								//assert(false);
+							}
+						}
+						if (winner == -1) {
+							//尾墩和
+							winner = src_chairid; loser = dst_chairid;
+							{
+								int index = player_items[winner].results_size() - 1;
+								assert(index >= 0);
+								//src比牌结果 ////////////
+								s13s::CompareResult* result = player_items[winner].mutable_results(index);
+								//尾墩输赢信息
+								s13s::CompareItem* item = result->add_items();
+								{
+									//和了
+									item->set_winlost(0);
+									//和分
+									item->set_score(0);
+									//和的牌型
+									item->set_ty(handInfos[winner].GetSelected()->duns[dt].ty_);
+									//对方牌型
+									item->set_peerty(handInfos[loser].GetSelected()->duns[dt].ty_);
+								}
+							}
+							{
+								int index = player_items[loser].results_size() - 1;
+								assert(index >= 0);
+								//dst比牌结果 ////////////
+								s13s::CompareResult* result = player_items[loser].mutable_results(index);
+								//尾墩输赢信息
+								s13s::CompareItem* item = result->add_items();
+								{
+									//和了
+									item->set_winlost(0);
+									//和分
+									item->set_score(0);
+									//和的牌型
+									item->set_ty(handInfos[loser].GetSelected()->duns[dt].ty_);
+									//对方牌型
+									item->set_peerty(handInfos[winner].GetSelected()->duns[dt].ty_);
+								}
+							}
+						}
+						//乌龙/对子/两对/三条/顺子/同花/葫芦获胜赢1水
+						else if (handInfos[winner].GetSelected()->duns[dt].ty_ == S13S::Tysp ||
+							handInfos[winner].GetSelected()->duns[dt].ty_ == S13S::Ty20 ||
+							handInfos[winner].GetSelected()->duns[dt].ty_ == S13S::Ty22 ||
+							handInfos[winner].GetSelected()->duns[dt].ty_ == S13S::Ty30 ||
+							handInfos[winner].GetSelected()->duns[dt].ty_ == S13S::Ty123 ||
+							handInfos[winner].GetSelected()->duns[dt].ty_ == S13S::Tysc ||
+							handInfos[winner].GetSelected()->duns[dt].ty_ == S13S::Ty32) {
+								{
+									int index = player_items[winner].results_size() - 1;
+									assert(index >= 0);
+									//赢家比牌结果 ////////////
+									s13s::CompareResult* result = player_items[winner].mutable_results(index);
+									//尾墩输赢信息
+									s13s::CompareItem* item = result->add_items();
+									{
+										//赢了
+										item->set_winlost(1);
+										//赢分
+										item->set_score(1);
+										//赢的牌型
+										item->set_ty(handInfos[winner].GetSelected()->duns[dt].ty_);
+										//对方牌型
+										item->set_peerty(handInfos[loser].GetSelected()->duns[dt].ty_);
+									}
+								}
+								{
+									int index = player_items[loser].results_size() - 1;
+									assert(index >= 0);
+									//输家比牌结果 ////////////
+									s13s::CompareResult* result = player_items[loser].mutable_results(index);
+									//尾墩输赢信息
+									s13s::CompareItem* item = result->add_items();
+									{
+										//输了
+										item->set_winlost(-1);
+										//输分
+										item->set_score(-1);
+										//输的牌型
+										item->set_ty(handInfos[loser].GetSelected()->duns[dt].ty_);
+										//对方牌型
+										item->set_peerty(handInfos[winner].GetSelected()->duns[dt].ty_);
+									}
+								}
+						}
+						//铁支摆尾墩获胜赢4水
+						else if (handInfos[winner].GetSelected()->duns[dt].ty_ == S13S::Ty40) {
+							{
+								int index = player_items[winner].results_size() - 1;
+								assert(index >= 0);
+								//赢家比牌结果 ////////////
+								s13s::CompareResult* result = player_items[winner].mutable_results(index);
+								//尾墩输赢信息
+								s13s::CompareItem* item = result->add_items();
+								{
+									//赢了
+									item->set_winlost(1);
+									//赢分
+									item->set_score(4);
+									//赢的牌型
+									item->set_ty(handInfos[winner].GetSelected()->duns[dt].ty_);
+									//对方牌型
+									item->set_peerty(handInfos[loser].GetSelected()->duns[dt].ty_);
+								}
+							}
+							{
+								int index = player_items[loser].results_size() - 1;
+								assert(index >= 0);
+								//输家比牌结果 ////////////
+								s13s::CompareResult* result = player_items[loser].mutable_results(index);
+								//尾墩输赢信息
+								s13s::CompareItem* item = result->add_items();
+								{
+									//输了
+									item->set_winlost(-1);
+									//输分
+									item->set_score(-4);
+									//输的牌型
+									item->set_ty(handInfos[loser].GetSelected()->duns[dt].ty_);
+									//对方牌型
+									item->set_peerty(handInfos[winner].GetSelected()->duns[dt].ty_);
+								}
+							}
+						}
+						//同花顺摆尾墩获胜赢5水
+						else if (handInfos[winner].GetSelected()->duns[dt].ty_ == S13S::Ty123sc) {
+							{
+								int index = player_items[winner].results_size() - 1;
+								assert(index >= 0);
+								//赢家比牌结果 ////////////
+								s13s::CompareResult* result = player_items[winner].mutable_results(index);
+								//尾墩输赢信息
+								s13s::CompareItem* item = result->add_items();
+								{
+									//赢了
+									item->set_winlost(1);
+									//赢分
+									item->set_score(5);
+									//赢的牌型
+									item->set_ty(handInfos[winner].GetSelected()->duns[dt].ty_);
+									//对方牌型
+									item->set_peerty(handInfos[loser].GetSelected()->duns[dt].ty_);
+								}
+							}
+							{
+								int index = player_items[loser].results_size() - 1;
+								assert(index >= 0);
+								//输家比牌结果 ////////////
+								s13s::CompareResult* result = player_items[loser].mutable_results(index);
+								//尾墩输赢信息
+								s13s::CompareItem* item = result->add_items();
+								{
+									//输了
+									item->set_winlost(-1);
+									//输分
+									item->set_score(-5);
+									//输的牌型
+									item->set_ty(handInfos[loser].GetSelected()->duns[dt].ty_);
+									//对方牌型
+									item->set_peerty(handInfos[winner].GetSelected()->duns[dt].ty_);
+								}
+							}
+						}
+						else {
+							{
+								assert(false);
+							}
+						}
+					}
+				}
+				//json格式在线view：http://www.bejson.com/jsonviewernew/
+				//各玩家之间两两比牌结果
+				for (int i = 0; i < GAME_PLAYER; ++i) {
+					if (true) {
 						{
 							//序列化std::string
 							//std::string data = rspdata.SerializeAsString();
 							//序列化bytes
-							int len = rspdata.ByteSize();//len
+							int len = player_items[i].ByteSize();//len
 							uint8_t *data = new uint8_t[len];
-							rspdata.SerializeToArray(data, len);//data
-							std::string const& typeName = rspdata.GetTypeName();//typename
+							player_items[i].SerializeToArray(data, len);//data
+							std::string const& typeName = player_items[i].GetTypeName();//typename
 							delete[] data;
 							//转换json格式
 							std::string jsonstr;
-							PB2JSON::Pb2Json::PbMsg2JsonStr(rspdata, jsonstr, true);
-							printf("\n--- *** %s\n", typeName.c_str());
-							printf("%s\n\n", jsonstr.c_str());
+							PB2JSON::Pb2Json::PbMsg2JsonStr(player_items[i], jsonstr, true);
+							printf("\n--- *** {\"%s\":\n", typeName.c_str());
+							printf("%s}\n\n", jsonstr.c_str());
 						}
 					}
 				}
 			}
-		} while ('q' != getchar());
+		} while (true/*'q' != getchar()*/);
 	}
 #if 0
 	//从src中抽取连续n张牌到dst中

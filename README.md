@@ -12,7 +12,7 @@
 		
 		十三水算法接口说明：
 			//枚举牌型测试
-			static void TestEnumCards();
+			static void TestEnumCards(int size);
 			
 			//枚举牌型测试
 			//filename char const* 文件读取手牌 cardsList.ini
@@ -21,11 +21,16 @@
 			//玩家发牌测试
 			static void TestPlayerCards();
 			
-			//protobuf测试
+			//开始游戏测试
 			static void TestProtoCards();
 			
 			//手动摆牌测试
 			static void TestManualCards();
+			
+			//确定牌型/比牌测试
+			//先让每个玩家确定手牌三墩牌型，手动摆牌或者从枚举几组中任选一组作为手牌牌型与其他玩家比牌，
+			//再玩家之间两两比牌，头敦与头敦比，中墩与中墩比，尾墩与尾墩比，并计算输赢积分(输赢多少水，统计打枪/全垒打)
+			static void TestCompareCards();
 			
 			//手牌牌型分析(特殊牌型判断/枚举三墩组合)，算法入口 /////////
 			//src uint8_t const* 一副手牌(13张)

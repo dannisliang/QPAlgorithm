@@ -1,0 +1,156 @@
+{
+  "s13s.PlayerItem": {
+    "chairId": 0,
+    "peers": [
+      {
+        "chairId": 3,
+        "group": {
+          "duns": [
+            {
+              "c": 3,
+              "cards": "H:!",
+              "id": 0,
+              "ty": 2
+            },
+            {
+              "c": 5,
+              "cards": "C\u0013\u0012D&",
+              "id": 1,
+              "ty": 3
+            },
+            {
+              "c": 5,
+              "cards": "I9\u0019K+",
+              "id": 2,
+              "ty": 8
+            }
+          ],
+          "specialTy": 0,
+          "start": 0
+        }
+      },
+      {
+        "chairId": 2,
+        "group": {
+          "duns": [
+            {
+              "c": 3,
+              "cards": "*J\u001C",
+              "id": 0,
+              "ty": 3
+            },
+            {
+              "c": 5,
+              "cards": "2\u001448)",
+              "id": 1,
+              "ty": 3
+            },
+            {
+              "c": 5,
+              "cards": "\u0015%E'7",
+              "id": 2,
+              "ty": 8
+            }
+          ],
+          "specialTy": 0,
+          "start": 0
+        }
+      },
+      {
+        "chairId": 1,
+        "group": {
+          "duns": [
+            {
+              "c": 3,
+              "cards": "\u0011A\"",
+              "id": 0,
+              "ty": 3
+            },
+            {
+              "c": 5,
+              "cards": "B3$\u0017\u0018",
+              "id": 1,
+              "ty": 2
+            },
+            {
+              "c": 5,
+              "cards": "\u001B;,LM",
+              "id": 2,
+              "ty": 4
+            }
+          ],
+          "specialTy": 0,
+          "start": 0
+        }
+      }
+    ],
+    "results": [
+      {
+        "items": [
+          {
+            "peerTy": 2,
+            "score": -1,
+            "ty": 2,
+            "winLost": -1
+          },
+          {
+            "peerTy": 3,
+            "score": 1,
+            "ty": 5,
+            "winLost": 1
+          },
+          {
+            "peerTy": 8,
+            "score": -1,
+            "ty": 5,
+            "winLost": -1
+          }
+        ]
+      },
+      {
+        "items": [
+          {
+            "peerTy": 3,
+            "score": -1,
+            "ty": 2,
+            "winLost": -1
+          },
+          {
+            "peerTy": 3,
+            "score": 1,
+            "ty": 5,
+            "winLost": 1
+          },
+          {
+            "peerTy": 8,
+            "score": -1,
+            "ty": 5,
+            "winLost": -1
+          }
+        ]
+      },
+      {
+        "items": [
+          {
+            "peerTy": 3,
+            "score": -1,
+            "ty": 2,
+            "winLost": -1
+          },
+          {
+            "peerTy": 2,
+            "score": 1,
+            "ty": 5,
+            "winLost": 1
+          },
+          {
+            "peerTy": 4,
+            "score": 1,
+            "ty": 5,
+            "winLost": 1
+          }
+        ]
+      }
+    ]
+  }
+}

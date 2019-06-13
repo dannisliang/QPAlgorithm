@@ -23,13 +23,15 @@
 
 #define MAX_CARD_TOTAL	S13S::MaxCardTotal	//牌总个数
 #define GAME_PLAYER		S13S::MaxPlayer		//最多4人局
+#define MIN_GAME_PLAYER S13S::MinPlayer		//至少2人局
 #define MAX_COUNT		S13S::MaxCount		//每人13张牌
 #define MAX_ROUND       S13S::MaxRound		//最大局数
 
 //十三水
 namespace S13S {
-	const int MaxCardTotal = 52;	//牌总个数
+	const int MaxCardTotal = 52;	//牌总个数，除去大小王，52张牌
 	const int MaxPlayer = 4;		//最多4人局
+	const int MinPlayer = 2;		//至少2人局
 	const int MaxCount = 13;		//每人13张牌
 	const int MaxRound = 1;			//最大局数
 
@@ -100,7 +102,7 @@ namespace S13S {
 		SameColorConsecutive = SameColor & Consecutive,	//同花顺
 	};
 
-	//前/中/尾墩
+	//头/中/尾墩
 	enum DunTy {
 		DunNil = -1,
 		DunFirst = 0,
@@ -314,7 +316,7 @@ namespace S13S {
 				memcpy(&cards[c], src, len);
 				c += len;
 			}
-			inline int GetC() { return c; }
+			inline int GetC() const { return c; }
 			//标记0-头/1-中/2-尾
 			DunTy dt_;
 			//墩对应普通牌型
@@ -346,6 +348,14 @@ namespace S13S {
 				memcpy(duns, ref.duns, sizeof(dundata_t)*DunMax);
 				return *this;
 			}
+			void Reset() {
+				start = DunNil;
+				specialTy = TyNil;
+				//memset(duns, 0, sizeof(dundata_t)*DunMax);
+				for (int i = DunFirst; i <= DunLast; ++i) {
+					duns[i].Reset();
+				}
+			}
 			void assign(DunTy dt, HandTy ty, uint8_t const* src, int len) {
 				assert(dt != DunNil);
 				if (start == DunNil || dt < start) {
@@ -359,6 +369,8 @@ namespace S13S {
 			void append(DunTy dt, uint8_t const* src, int len) {
 				duns[(int)(dt)].append(src, len);
 			}
+			//返回三墩组牌数
+			inline int GetC() { return duns[DunFirst].GetC() + duns[DunSecond].GetC() + duns[DunLast].GetC(); }
 			//打印指定墩牌型
 			void PrintCardList(DunTy dt);
 			//打印指定墩牌型
@@ -376,9 +388,11 @@ namespace S13S {
 		class handinfo_t {
 			friend class CGameLogic;
 		public:
-			handinfo_t() :rootEnumList(NULL), specialTy_(TyNil), chairID(-1), current(0), classify({ 0 }) {
+			handinfo_t()
+				:rootEnumList(NULL), specialTy_(TyNil), chairID(-1),
+				manual_group_index(-1),
+				select_group_index(-1), classify({ 0 }) {
 				Reset();
-				memset(duns_select, 0, sizeof(dundata_t)*DunMax);
 			}
 			~handinfo_t() {
 				if (rootEnumList) {
@@ -399,20 +413,35 @@ namespace S13S {
 			//确定手牌牌型
 			void CalcHandCardsType(uint8_t const* src, int len);
 		public:
-			//给指定墩(头/中/尾墩)选择一组牌(头敦3/中墩5/尾墩5)
+			//手动选牌组墩，给指定墩(头/中/尾墩)选择一组牌(头敦3/中墩5/尾墩5)
 			//dt DunTy 指定为哪墩
 			//src uint8_t const* 选择的一组牌(5张或3张)
 			//len int 3/5张，头敦3张/中墩5张/尾墩5张
 			//ty HandTy 指定墩牌型
 			bool SelectAs(DunTy dt, uint8_t const* src, int len, HandTy ty);
-			//重新摆牌重置各墩牌数据
-			void ResetDunsSelect();
+			//重置手动摆牌
+			void ResetManual();
+			//手牌确定三墩牌型
+			//groupindex int 若 >=0 从enum_groups中选择一组，对应groups中索引
+			//groupindex int 若 <= -1 指向manual_group对应groups中索引
+			bool Select(int groupindex);
+			//返回手牌确定的三墩牌型
+			groupdun_t const* GetSelected();
+			//手牌是否已确定三墩牌型
+			inline bool HasSelected() { return select_group_index != -1; }
+			//返回选择groups的索引
+			inline int GetSelectedIndex() { return select_group_index; }
+			//是否选择手动摆牌
+			inline bool IsManualSelected() {
+				return (select_group_index != -1) &&
+					   (select_group_index == manual_group_index);
+			}
 			//返回组墩后剩余牌/散牌
 			//src uint8_t const* 一副手牌13张
 			//cpy uint8_t *cpy 组墩后剩余牌 cpylen int& 余牌数量
 			void GetLeftCards(uint8_t const* src, int len, uint8_t *cpy, int& cpylen);
-			//返回组墩总牌数
-			inline int GetCardCount() { return duns_select[DunFirst].c + duns_select[DunSecond].c + duns_select[DunLast].c; }
+			//返回手动摆牌组墩总牌数
+			inline int GetManualC() { return manual_group.GetC(); }
 		public:
 			//玩家座椅ID
 			int chairID;
@@ -422,12 +451,16 @@ namespace S13S {
 			classify_t classify;
 			//根节点：初始枚举所有牌型列表
 			EnumTree *rootEnumList;
-			//当前选择groups中的第几组优先
-			int current;
 			//枚举几组最优墩，指向EnumTree::TraverseTreeNode成员
-			std::vector<groupdun_t> groups;
-			//[0]头敦(3)/[1]中墩(5)/[2]尾墩(5)
-			dundata_t duns_select[DunMax];
+			std::vector<groupdun_t> enum_groups;
+			//手动摆牌组墩[0]头敦(3)/[1]中墩(5)/[2]尾墩(5)
+			groupdun_t manual_group;
+			//manual_group对应groups索引
+			int manual_group_index;
+			//当前选择groups中的第几组优先
+			int select_group_index;
+			//合并 enum_groups & manual_group
+			std::vector<groupdun_t const*> groups;
 			//叶子节点列表
 			//枚举几组最优墩(头墩&中墩&尾墩加起来为一组)，由叶子节点向上往根节点遍历
 			//叶子节点 dt_ 成员判断当前是从哪墩节点开始，
@@ -444,10 +477,14 @@ namespace S13S {
 		static void TestEnumCards(char const* filename);
 		//玩家发牌测试
 		static void TestPlayerCards();
-		//protobuf测试
+		//开始游戏测试
 		static void TestProtoCards();
 		//手动摆牌测试
 		static void TestManualCards();
+		//确定牌型/比牌测试
+		//先让每个玩家确定手牌三墩牌型，手动摆牌或者从枚举几组中任选一组作为手牌牌型与其他玩家比牌，
+		//再玩家之间两两比牌，头敦与头敦比，中墩与中墩比，尾墩与尾墩比，并计算输赢积分(输赢多少水，统计打枪/全垒打)
+		static void TestCompareCards();
 	public:
 		//手牌牌型分析(特殊牌型判断/枚举三墩组合)，算法入口 /////////
 		//src uint8_t const* 一副手牌(13张)

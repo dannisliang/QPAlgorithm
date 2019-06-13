@@ -1,6 +1,13 @@
 syntax = "proto2";
 package s13s;
 
+enum SUBID
+{
+	//客户端命令结构
+	SUB_C_MANUALCARDS		= 1; // 手动摆牌 CMD_C_ManualCards
+	SUB_C_MAKESUREDUNHANDTY = 2; // 确定三墩牌型 CMD_C_MakesureDunHandTy
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 //牌数据
 message CardData
@@ -30,19 +37,13 @@ message HandCards
 {
 	required bytes cards         = 1; //一副13张手牌
 	required int32 specialTy     = 2; //标记手牌特殊牌型
-	repeated GroupDunData groups = 3; //枚举几组最优墩(开元或德胜是给了3组，这里给了5组)
+	repeated GroupDunData groups = 3; //枚举几组最优墩(开元或得胜是给了3组，这里给了5组)
 }
 ////////////////////////////////////////////////////////////////////////////////
-//游戏开始
-message CMD_S_GameStart
+//枚举牌型
+message EnumCards
 {
-	required HandCards handCards  = 1;	//手牌数据
-};
-////////////////////////////////////////////////////////////////////////////////
-//手动摆牌
-message CMD_S_ManualCards
-{
-	repeated bytes v123sc  = 1; //所有同花色五张/三张连续牌(五张/三张同花顺)
+	repeated bytes v123sc = 1; //所有同花色五张/三张连续牌(五张/三张同花顺)
 	repeated bytes v40	  = 2; //所有铁支(四张)
 	repeated bytes v32	  = 3; //所有葫芦(一组三条加上一组对子)
 	repeated bytes vsc	  = 4; //所有同花五张/三张非连续牌(五张/三张同花)
@@ -50,9 +51,51 @@ message CMD_S_ManualCards
 	repeated bytes v30	  = 6; //所有三条(三张)
 	repeated bytes v22	  = 7; //所有两对(两个对子)
 	repeated bytes v20	  = 8; //所有对子(一对)
-	optional int32 dt     = 9; //客户端选择了哪一墩，标记0-头/1-中/2-尾
-	optional int32 ty     = 10;//墩对应牌型
-	optional bytes cpy    = 11;//剩余牌
+}
+////////////////////////////////////////////////////////////////////////////////
+//比牌对方
+message ComparePlayer
+{
+	required int32 chairId 		 = 1; //座椅ID
+	required GroupDunData select = 2; //选择一组墩(含头墩/中墩/尾墩)
+}
+////////////////////////////////////////////////////////////////////////////////
+//单墩比输赢
+message CompareItem
+{
+	required int32 winLost = 1; //输赢
+	required int32 score   = 2; //得分/丢分
+	optional int32 ty      = 3; //单墩牌型
+	optional int32 peerTy  = 4; //对方单墩牌型
+}
+////////////////////////////////////////////////////////////////////////////////
+//三墩比输赢
+message CompareResult
+{
+	repeated CompareItem items = 1; //items[DunMax]
+}
+////////////////////////////////////////////////////////////////////////////////
+//桌椅玩家
+message PlayerItem
+{
+	required int32 chairId 		   = 1; //座椅ID
+	repeated ComparePlayer peers   = 2;//比牌对方
+	repeated CompareResult results = 3;//比牌结果
+}
+////////////////////////////////////////////////////////////////////////////////
+//游戏开始
+message CMD_S_GameStart
+{
+	required HandCards handCards  = 1; //手牌数据
+};
+////////////////////////////////////////////////////////////////////////////////
+//手动摆牌
+message CMD_S_ManualCards
+{
+	optional EnumCards enums = 1; //枚举牌型
+	optional int32 dt        = 2; //客户端选择了哪一墩，标记0-头/1-中/2-尾
+	optional int32 ty        = 3; //墩对应牌型
+	optional bytes cpy       = 4; //剩余牌
 }
 ////////////////////////////////////////////////////////////////////////////////
 //手动摆牌
@@ -60,4 +103,10 @@ message CMD_C_ManualCards
 {
 	optional int32 dt    = 1; //客户端选择了哪一墩，标记0-头/1-中/2-尾
 	optional bytes cards = 2; //客户端选择了哪些牌，作为一墩，后端用余牌再计算枚举
+}
+////////////////////////////////////////////////////////////////////////////////
+//确定牌型，所有玩家都确定牌型后比牌
+message CMD_C_MakesureDunHandTy
+{
+	required int32 groupindex = 1; //>=0从枚举的几组墩中选择一组，-1手动摆牌确认
 }
