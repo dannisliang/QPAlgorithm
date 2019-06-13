@@ -63,8 +63,8 @@ message ComparePlayer
 //单墩比输赢
 message CompareItem
 {
-	required int32 winLost = 1; //输赢
-	required int32 score   = 2; //得分/丢分
+	required int32 winLost = 1; //输赢 -1输/0和/1赢
+	optional int32 score   = 2; //赢分+/和分0/输分-
 	optional int32 ty      = 3; //单墩牌型
 	optional int32 peerTy  = 4; //对方单墩牌型
 }
