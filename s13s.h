@@ -431,7 +431,7 @@ namespace S13S {
 			inline bool HasSelected() { return select_group_index != -1; }
 			//返回选择groups的索引
 			inline int GetSelectedIndex() { return select_group_index; }
-			//是否选择手动摆牌
+			//判断是否选择了手动摆牌
 			inline bool IsManualSelected() {
 				return (select_group_index != -1) &&
 					   (select_group_index == manual_group_index);
