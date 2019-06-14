@@ -5120,6 +5120,101 @@ namespace S13S {
 						}
 					}
 				}
+				//统计判断打枪/全垒打
+				for (int i = 0; i < GAME_PLAYER; ++i) {
+					if (true) {
+						//判断是否全垒打
+						int shootc = 0;
+						//遍历玩家所有比牌对象
+						for (int j = 0; j < player_items[i].peers_size(); ++j) {
+							s13s::ComparePlayer const& peer = player_items[i].peers(j);
+							s13s::CompareResult const& result = player_items[i].results(j);
+							int winc = 0, lostc = 0, sumscore = 0;
+							assert(result.items_size() == 3);
+							//玩家与当前比牌对象比头/中/尾三墩输赢得水总分，不考虑打枪
+							for (int d = 0; d < result.items_size(); ++d) {
+								if (result.items(d).winlost() == 1) {
+									++winc;
+								}
+								else if (result.items(d).winlost() == -1) {
+									++lostc;
+								}
+								sumscore += result.items(d).score();
+							}
+							//三墩不考虑打枪输赢得水总分 赢分+/和分0/输分-
+							result.set_score(sumscore);
+							if (winc == result.items_size()) {
+								//玩家三墩全部胜过比牌对象，则玩家对比牌对象打枪，中枪者付给打枪者2倍的水
+								result.set_shoot(1);//-1被打枪/0不打枪/1打枪
+								//统计当前玩家打枪次数
+								++shootc;
+							}
+							else if (lostc == result.items_size()) {
+								//比牌对象三墩全部胜过玩家，则比牌对象对玩家打枪，中枪者付给打枪者2倍的水
+								result.set_shoot(-1);//-1被打枪/0不打枪/1打枪
+							}
+							else {
+								result.set_shoot(0);//-1被打枪/0不打枪/1打枪
+							}
+						}
+						if (shootc == player_items[i].peers_size() && player_items[i].peers_size() > 1) {
+							//全垒打，玩家三墩全部胜过其它玩家，且至少打2枪，中枪者付给打枪者4倍的水
+							player_items[i].set_allshoot(1);//-1被全垒打/0无全垒打/1全垒打
+							for (k = 0; i < GAME_PLAYER; ++k) {
+								if (true) {
+									if (k != i) {
+										//-1被全垒打/0无全垒打/1全垒打
+										player_items[i].set_allshoot(-1);
+									}
+								}
+							}
+						}
+					}
+				}
+				//计算包括打枪/全垒打在内输赢得水总分
+				for (int i = 0; i < GAME_PLAYER; ++i) {
+					if (true) {
+						//玩家输赢得水总分
+						int deltascore = 0;
+						//遍历玩家所有比牌对象
+						for (int j = 0; j < player_items[i].peers_size(); ++j) {
+							s13s::CompareResult const& result = player_items[i].results(j);
+							//1打枪
+							if (result.shoot() == 1) {
+								//1全垒打
+								if (player_items[i].allshoot() == 1) {
+									//-1被全垒打/0无全垒打/1全垒打
+									deltascore += 4 * result.score();
+								}
+								else {
+									//-1被打枪/0不打枪/1打枪
+									assert(player_items[i].allshoot() == 0);
+									deltascore += 2 * result.score();
+								}
+							}
+							//-1被打枪
+							else if(result.shoot() == -1) {
+								//-1被全垒打
+								if (player_items[i].allshoot() == -1) {
+									//-1被全垒打/0无全垒打/1全垒打
+									deltascore += 4 * result.score();
+								}
+								else {
+									//-1被打枪/0不打枪/1打枪
+									assert(player_items[i].allshoot() == 0);
+									deltascore += 2 * result.score();
+								}
+							}
+							//0不打枪
+							else {
+								assert(result.shoot() == 0);
+								deltascore += result.score();
+							}
+						}
+						//玩家输赢得水总分
+						player_items[i].set_deltascore(deltascore);
+					}
+				}
 				//json格式在线view：http://www.bejson.com/jsonviewernew/
 				//各玩家之间两两比牌结果
 				for (int i = 0; i < GAME_PLAYER; ++i) {

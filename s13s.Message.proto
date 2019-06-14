@@ -57,7 +57,7 @@ message EnumCards
 message ComparePlayer
 {
 	required int32 chairId 		 = 1; //座椅ID
-	required GroupDunData select = 2; //选择一组墩(含头墩/中墩/尾墩)
+	required GroupDunData group  = 2; //选择一组墩(含头墩/中墩/尾墩)
 }
 ////////////////////////////////////////////////////////////////////////////////
 //单墩比输赢
@@ -73,6 +73,8 @@ message CompareItem
 message CompareResult
 {
 	repeated CompareItem items = 1; //items[DunMax]
+	optional int32       shoot = 2; //-1被打枪/0不打枪/1打枪
+	optional int32       score = 3; //三墩不考虑打枪总输赢 赢分+/和分0/输分-
 }
 ////////////////////////////////////////////////////////////////////////////////
 //桌椅玩家
@@ -81,6 +83,8 @@ message PlayerItem
 	required int32 chairId 		   = 1; //座椅ID
 	repeated ComparePlayer peers   = 2;//比牌对方
 	repeated CompareResult results = 3;//比牌结果
+	optional int32 allshoot        = 4;//是否全垒打 -1被全垒打/0无全垒打/1全垒打
+	optional int32 deltascore	   = 5;//玩家两两比牌总输赢 赢分+/和分0/输分- 包括打枪/全垒打
 }
 ////////////////////////////////////////////////////////////////////////////////
 //游戏开始
