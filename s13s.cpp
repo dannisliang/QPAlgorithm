@@ -5219,8 +5219,8 @@ namespace S13S {
 						player_items[i].set_deltascore(deltascore);
 					}
 				}
-				//json格式在线view：http://www.bejson.com/jsonviewernew/
-				//各玩家之间两两比牌结果
+				//json格式在线view工具：http://www.bejson.com/jsonviewernew/
+				//玩家之间两两比牌输赢得水总分明细，包括打枪/全垒打
 				for (int i = 0; i < GAME_PLAYER; ++i) {
 					if (true) {
 						{
