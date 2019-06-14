@@ -5126,7 +5126,7 @@ namespace S13S {
 						int shootc = 0;
 						//遍历玩家所有比牌对象
 						for (int j = 0; j < player_items[i].peers_size(); ++j) {
-							s13s::ComparePlayer const& peer = player_items[i].peers(j);
+							//s13s::ComparePlayer const& peer = player_items[i].peers(j);
 							s13s::CompareResult const& result = player_items[i].results(j);
 							int winc = 0, lostc = 0, sumscore = 0;
 							assert(result.items_size() == 3);
@@ -5159,11 +5159,11 @@ namespace S13S {
 						if (shootc == player_items[i].peers_size() && player_items[i].peers_size() > 1) {
 							//全垒打，玩家三墩全部胜过其它玩家，且至少打2枪，中枪者付给打枪者4倍的水
 							player_items[i].set_allshoot(1);//-1被全垒打/0无全垒打/1全垒打
-							for (int k = 0; i < GAME_PLAYER; ++k) {
+							for (int k = 0; k < GAME_PLAYER; ++k) {
 								if (true) {
 									if (k != i) {
 										//-1被全垒打/0无全垒打/1全垒打
-										player_items[i].set_allshoot(-1);
+										player_items[k].set_allshoot(-1);
 									}
 								}
 							}
@@ -5177,6 +5177,7 @@ namespace S13S {
 						int deltascore = 0;
 						//遍历玩家所有比牌对象
 						for (int j = 0; j < player_items[i].peers_size(); ++j) {
+							//s13s::ComparePlayer const& peer = player_items[i].peers(j);
 							s13s::CompareResult const& result = player_items[i].results(j);
 							//1打枪
 							if (result.shoot() == 1) {
@@ -5188,6 +5189,7 @@ namespace S13S {
 								else {
 									//-1被打枪/0不打枪/1打枪
 									assert(player_items[i].allshoot() == 0);
+									//player_items[i].set_allshoot(0);
 									deltascore += 2 * result.score();
 								}
 							}
@@ -5201,12 +5203,15 @@ namespace S13S {
 								else {
 									//-1被打枪/0不打枪/1打枪
 									assert(player_items[i].allshoot() == 0);
+									//player_items[i].set_allshoot(0);
 									deltascore += 2 * result.score();
 								}
 							}
 							//0不打枪
 							else {
 								assert(result.shoot() == 0);
+								assert(player_items[i].allshoot() == 0);
+								//player_items[i].set_allshoot(0);
 								deltascore += result.score();
 							}
 						}
