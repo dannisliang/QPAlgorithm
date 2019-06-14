@@ -4404,7 +4404,6 @@ namespace S13S {
 							printf("\n--- *** %s\n", typeName.c_str());
 							printf("%s\n\n", jsonstr.c_str());
 						}
-						
 						//玩家已经确认过牌型
 						if (handInfos[i].HasSelected()) {
 							assert(false);
@@ -5142,25 +5141,25 @@ namespace S13S {
 								sumscore += result.items(d).score();
 							}
 							//三墩不考虑打枪输赢得水总分 赢分+/和分0/输分-
-							result.set_score(sumscore);
+							const_cast<s13s::CompareResult&>(result).set_score(sumscore);
 							if (winc == result.items_size()) {
 								//玩家三墩全部胜过比牌对象，则玩家对比牌对象打枪，中枪者付给打枪者2倍的水
-								result.set_shoot(1);//-1被打枪/0不打枪/1打枪
+								const_cast<s13s::CompareResult&>(result).set_shoot(1);//-1被打枪/0不打枪/1打枪
 								//统计当前玩家打枪次数
 								++shootc;
 							}
 							else if (lostc == result.items_size()) {
 								//比牌对象三墩全部胜过玩家，则比牌对象对玩家打枪，中枪者付给打枪者2倍的水
-								result.set_shoot(-1);//-1被打枪/0不打枪/1打枪
+								const_cast<s13s::CompareResult&>(result).set_shoot(-1);//-1被打枪/0不打枪/1打枪
 							}
 							else {
-								result.set_shoot(0);//-1被打枪/0不打枪/1打枪
+								const_cast<s13s::CompareResult&>(result).set_shoot(0);//-1被打枪/0不打枪/1打枪
 							}
 						}
 						if (shootc == player_items[i].peers_size() && player_items[i].peers_size() > 1) {
 							//全垒打，玩家三墩全部胜过其它玩家，且至少打2枪，中枪者付给打枪者4倍的水
 							player_items[i].set_allshoot(1);//-1被全垒打/0无全垒打/1全垒打
-							for (k = 0; i < GAME_PLAYER; ++k) {
+							for (int k = 0; i < GAME_PLAYER; ++k) {
 								if (true) {
 									if (k != i) {
 										//-1被全垒打/0无全垒打/1全垒打
@@ -5237,7 +5236,7 @@ namespace S13S {
 					}
 				}
 			}
-		} while (true/*'q' != getchar()*/);
+		} while ('q' != getchar());
 	}
 #if 0
 	//从src中抽取连续n张牌到dst中
